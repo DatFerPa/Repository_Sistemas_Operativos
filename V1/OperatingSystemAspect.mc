@@ -2743,6 +2743,12 @@ int OperatingSystem_LongTermScheduler() {
    if(PID == -1){
     ComputerSystem_DebugMessage(104,'e',progamaFallido->executableName,"it does not exist");
    }
+   if(PID == -2){
+    ComputerSystem_DebugMessage(104,'e',progamaFallido->executableName,"invalid priority or size");
+   }
+   if(PID == -4){
+    ComputerSystem_DebugMessage(105,'e',progamaFallido->executableName);
+   }
   }else{
    numberOfSuccessfullyCreatedProcesses++;
    if (programList[i]->type==(unsigned int) 0)
@@ -2780,12 +2786,18 @@ int OperatingSystem_CreateProcess(int indexOfExecutableProgram) {
  if(processSize == -1){
   return -1;
  }
+ if(processSize == -2){
+  return -2;
+ }
 
 
  priority=OperatingSystem_ObtainPriority(programFile);
 
 
   loadingPhysicalAddress=OperatingSystem_ObtainMainMemory(processSize, PID);
+ if(loadingPhysicalAddress == -4){
+  return -4;
+ }
 
 
  OperatingSystem_LoadProgram(programFile, loadingPhysicalAddress, processSize);

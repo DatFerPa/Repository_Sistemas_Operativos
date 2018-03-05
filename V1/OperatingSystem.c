@@ -130,7 +130,10 @@ int OperatingSystem_LongTermScheduler() {
 			}
 			if(PID == PROGRAMNOTVALID){
 				ComputerSystem_DebugMessage(104,ERROR,progamaFallido->executableName,"invalid priority or size");
-			{
+			}
+			if(PID == TOOBIGPROCESS){
+				ComputerSystem_DebugMessage(105,ERROR,progamaFallido->executableName);
+			}
 		}else{
 			numberOfSuccessfullyCreatedProcesses++;
 			if (programList[i]->type==USERPROGRAM) 
@@ -170,13 +173,16 @@ int OperatingSystem_CreateProcess(int indexOfExecutableProgram) {
 	}
 	if(processSize == PROGRAMNOTVALID){
 		return PROGRAMNOTVALID;
-	{
+	}
 
 	// Obtain the priority for the process
 	priority=OperatingSystem_ObtainPriority(programFile);
 	
 	// Obtain enough memory space
  	loadingPhysicalAddress=OperatingSystem_ObtainMainMemory(processSize, PID);
+	if(loadingPhysicalAddress == TOOBIGPROCESS){
+		return TOOBIGPROCESS;
+	}
 
 	// Load program in the allocated memory
 	OperatingSystem_LoadProgram(programFile, loadingPhysicalAddress, processSize);
