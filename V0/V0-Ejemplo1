@@ -1,0 +1,14 @@
+// Programa ejemplo V0
+200
+ADD 7 0 //valor inicial
+WRITE 100
+ADD 10 0 //flag
+WRITE 101
+MEMADD 1 100
+WRITE 100
+READ 101
+INC -1
+WRITE 101
+ZJUMP 2
+JUMP -6
+HALT
