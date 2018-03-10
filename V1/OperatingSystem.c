@@ -48,6 +48,9 @@ int numberOfReadyToRunProcesses=0;
 // Variable containing the number of not terminated user processes
 int numberOfNotTerminatedUserProcesses=0;
 
+//Ejercicio 10 V1
+char * statesNames [5]={"NEW","READY","EXECUTING","BLOCKED","EXIT"};
+
 // Initial set of tasks of the OS
 void OperatingSystem_Initialize(int daemonsIndex) {
 	
@@ -183,15 +186,18 @@ int OperatingSystem_CreateProcess(int indexOfExecutableProgram) {
 	if(loadingPhysicalAddress == TOOBIGPROCESS){
 		return TOOBIGPROCESS;
 	}
-
+	int exitoTam = SUCCESS;
 	// Load program in the allocated memory
-	OperatingSystem_LoadProgram(programFile, loadingPhysicalAddress, processSize);
-	
+	exitoTam =  OperatingSystem_LoadProgram(programFile, loadingPhysicalAddress, processSize);
+	if(exitoTam != SUCCESS){
+		return TOOBIGPROCESS;
+	}	
 	// PCB initialization
 	OperatingSystem_PCBInitialization(PID, loadingPhysicalAddress, processSize, priority, indexOfExecutableProgram);
 	
 	// Show message "Process [PID] created from program [executableName]\n"
 	ComputerSystem_DebugMessage(22,INIT,PID,executableProgram->executableName);
+	ComputerSystem_DebugMessage(111,SYSPROC,PID,statesNames[0]);
 	
 	return PID;
 }
@@ -237,6 +243,9 @@ void OperatingSystem_MoveToTheREADYState(int PID) {
 	if (Heap_add(PID, readyToRunQueue,QUEUE_PRIORITY ,&numberOfReadyToRunProcesses ,PROCESSTABLEMAXSIZE)>=0) {
 		processTable[PID].state=READY;
 	} 
+	//ejercicio 9 V1
+	OperatingSystem_PrintReadyToRunQueue();
+	
 }
 
 
@@ -274,6 +283,7 @@ void OperatingSystem_Dispatch(int PID) {
 	processTable[PID].state=EXECUTING;
 	// Modify hardware registers with appropriate values for the process identified by PID
 	OperatingSystem_RestoreContext(PID);
+	ComputerSystem_DebugMessage(110,SYSPROC,PID,statesNames[1],statesNames[2]);
 }
 
 
@@ -378,5 +388,21 @@ void OperatingSystem_InterruptLogic(int entryPoint){
 			break;
 	}
 
+}
+
+//Ejercicio 9 V1
+void OperatingSystem_PrintReadyToRunQueue(){
+	//recorrer la tabla de procesos que estan ready readyToRunQueue[] y con numberOfReadyToRunProcesses
+	//int readyToRunQueue[PROCESSTABLEMAXSIZE];
+	int i;
+	ComputerSystem_DebugMessage(106,SHORTTERMSCHEDULE);	
+	for(i = 0;i<PROCESSTABLEMAXSIZE;i++){
+		PCB proceso = processTable[readyToRunQueue[i]];
+		if(i == PROCESSTABLEMAXSIZE-1){
+			ComputerSystem_DebugMessage(108,SHORTTERMSCHEDULE,proceso.programListIndex,proceso.priority);
+		}else{
+			ComputerSystem_DebugMessage(107,SHORTTERMSCHEDULE,proceso.programListIndex,proceso.priority);
+		}
+	}
 }
 

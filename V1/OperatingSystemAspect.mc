@@ -899,6 +899,7 @@ extern int sipID;
 
 void OperatingSystem_Initialize();
 void OperatingSystem_InterruptLogic(int);
+void OperatingSystem_PrintReadyToRunQueue();
 # 2 "OperatingSystem.c" 2
 # 1 "OperatingSystemBase.h" 1
 
@@ -2664,6 +2665,9 @@ int numberOfReadyToRunProcesses=0;
 int numberOfNotTerminatedUserProcesses=0;
 
 
+char * statesNames [5]={"NEW","READY","EXECUTING","BLOCKED","EXIT"};
+
+
 void OperatingSystem_Initialize(int daemonsIndex) {
 
  int i, selectedProcess;
@@ -2716,7 +2720,7 @@ void OperatingSystem_PrepareDaemons(int programListDaemonsBase) {
  programList[0]->arrivalTime=0;
  programList[0]->type=(unsigned int) 1;
 
- sipID=0%4;
+ sipID=3%4;
 
 
 
@@ -2798,15 +2802,18 @@ int OperatingSystem_CreateProcess(int indexOfExecutableProgram) {
  if(loadingPhysicalAddress == -4){
   return -4;
  }
+ int exitoTam = 1;
 
-
- OperatingSystem_LoadProgram(programFile, loadingPhysicalAddress, processSize);
-
+ exitoTam = OperatingSystem_LoadProgram(programFile, loadingPhysicalAddress, processSize);
+ if(exitoTam != 1){
+  return -4;
+ }
 
  OperatingSystem_PCBInitialization(PID, loadingPhysicalAddress, processSize, priority, indexOfExecutableProgram);
 
 
  ComputerSystem_DebugMessage(22,'t',PID,executableProgram->executableName);
+ ComputerSystem_DebugMessage(111,'p',PID,statesNames[0]);
 
  return PID;
 }
@@ -2852,6 +2859,9 @@ void OperatingSystem_MoveToTheREADYState(int PID) {
  if (Heap_add(PID, readyToRunQueue,1 ,&numberOfReadyToRunProcesses ,4)>=0) {
   processTable[PID].state=READY;
  }
+
+ OperatingSystem_PrintReadyToRunQueue();
+
 }
 
 
@@ -2889,6 +2899,7 @@ void OperatingSystem_Dispatch(int PID) {
  processTable[PID].state=EXECUTING;
 
  OperatingSystem_RestoreContext(PID);
+ ComputerSystem_DebugMessage(110,'p',PID,statesNames[1],statesNames[2]);
 }
 
 
@@ -2993,4 +3004,20 @@ void OperatingSystem_InterruptLogic(int entryPoint){
    break;
  }
 
+}
+
+
+void OperatingSystem_PrintReadyToRunQueue(){
+
+
+ int i;
+ ComputerSystem_DebugMessage(106,'s');
+ for(i = 0;i<4;i++){
+  PCB proceso = processTable[readyToRunQueue[i]];
+  if(i == 4 -1){
+   ComputerSystem_DebugMessage(108,'s',proceso.programListIndex,proceso.priority);
+  }else{
+   ComputerSystem_DebugMessage(107,'s',proceso.programListIndex,proceso.priority);
+  }
+ }
 }

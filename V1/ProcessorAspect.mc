@@ -959,6 +959,7 @@ extern int sipID;
 
 void OperatingSystem_Initialize();
 void OperatingSystem_InterruptLogic(int);
+void OperatingSystem_PrintReadyToRunQueue();
 # 3 "Processor.c" 2
 # 1 "Buses.h" 1
 
