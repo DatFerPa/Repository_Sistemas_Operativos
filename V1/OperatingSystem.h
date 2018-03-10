@@ -27,6 +27,11 @@
 
 #define NOPROCESS -1
 
+//Ejercicio 11 V!: Modificaciones de la politicia de planificacion a corto plazo
+#define NUMBEROFQUEUES 2
+#define USEPROCESSQUEUE 0
+#define DAEMONSQUEUE 1
+
 // Enumerated type containing all the possible process states
 enum ProcessStates { NEW, READY, EXECUTING, BLOCKED, EXIT};
 
@@ -43,6 +48,7 @@ typedef struct {
 	int copyOfPCRegister;
 	unsigned int copyOfPSWRegister;
 	int programListIndex;
+	int queueID;
 } PCB;
 
 // These "extern" declaration enables other source code files to gain access

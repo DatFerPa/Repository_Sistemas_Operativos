@@ -872,7 +872,7 @@ extern void funlockfile (FILE *__stream) __attribute__ ((__nothrow__ , __leaf__)
 # 943 "/usr/include/stdio.h" 3 4
 
 # 6 "OperatingSystem.h" 2
-# 31 "OperatingSystem.h"
+# 36 "OperatingSystem.h"
 enum ProcessStates { NEW, READY, EXECUTING, BLOCKED, EXIT};
 
 
@@ -888,6 +888,7 @@ typedef struct {
  int copyOfPCRegister;
  unsigned int copyOfPSWRegister;
  int programListIndex;
+ int queueID;
 } PCB;
 
 
@@ -2668,6 +2669,10 @@ int numberOfNotTerminatedUserProcesses=0;
 char * statesNames [5]={"NEW","READY","EXECUTING","BLOCKED","EXIT"};
 
 
+
+
+
+
 void OperatingSystem_Initialize(int daemonsIndex) {
 
  int i, selectedProcess;
@@ -2899,7 +2904,7 @@ void OperatingSystem_Dispatch(int PID) {
  processTable[PID].state=EXECUTING;
 
  OperatingSystem_RestoreContext(PID);
- ComputerSystem_DebugMessage(110,'p',PID,statesNames[1],statesNames[2]);
+ ComputerSystem_DebugMessage(110,'p',executingProcessID,statesNames[1],statesNames[2]);
 }
 
 
@@ -3012,12 +3017,12 @@ void OperatingSystem_PrintReadyToRunQueue(){
 
  int i;
  ComputerSystem_DebugMessage(106,'s');
- for(i = 0;i<4;i++){
+ for(i = 0;i<numberOfReadyToRunProcesses;i++){
   PCB proceso = processTable[readyToRunQueue[i]];
-  if(i == 4 -1){
-   ComputerSystem_DebugMessage(108,'s',proceso.programListIndex,proceso.priority);
+  if(i == numberOfReadyToRunProcesses-1){
+   ComputerSystem_DebugMessage(108,'s',readyToRunQueue[i],proceso.priority);
   }else{
-   ComputerSystem_DebugMessage(107,'s',proceso.programListIndex,proceso.priority);
+   ComputerSystem_DebugMessage(107,'s',readyToRunQueue[i],proceso.priority);
   }
  }
 }

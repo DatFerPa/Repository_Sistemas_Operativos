@@ -51,6 +51,10 @@ int numberOfNotTerminatedUserProcesses=0;
 //Ejercicio 10 V1
 char * statesNames [5]={"NEW","READY","EXECUTING","BLOCKED","EXIT"};
 
+//Ejercicio 11 V!: Modificaciones de la politicia de planificacion a corto plazo
+//int readyToRunQueue [NUMBEROFQUEUES][PROCESSTABLEMAXSIZE];
+//int numberOfReadyToRunProcesses [NUMBEROFQUEUES] = {0,0};
+
 // Initial set of tasks of the OS
 void OperatingSystem_Initialize(int daemonsIndex) {
 	
@@ -283,7 +287,7 @@ void OperatingSystem_Dispatch(int PID) {
 	processTable[PID].state=EXECUTING;
 	// Modify hardware registers with appropriate values for the process identified by PID
 	OperatingSystem_RestoreContext(PID);
-	ComputerSystem_DebugMessage(110,SYSPROC,PID,statesNames[1],statesNames[2]);
+	ComputerSystem_DebugMessage(110,SYSPROC,executingProcessID,statesNames[1],statesNames[2]);
 }
 
 
@@ -396,13 +400,12 @@ void OperatingSystem_PrintReadyToRunQueue(){
 	//int readyToRunQueue[PROCESSTABLEMAXSIZE];
 	int i;
 	ComputerSystem_DebugMessage(106,SHORTTERMSCHEDULE);	
-	for(i = 0;i<PROCESSTABLEMAXSIZE;i++){
+	for(i = 0;i<numberOfReadyToRunProcesses;i++){
 		PCB proceso = processTable[readyToRunQueue[i]];
-		if(i == PROCESSTABLEMAXSIZE-1){
-			ComputerSystem_DebugMessage(108,SHORTTERMSCHEDULE,proceso.programListIndex,proceso.priority);
+		if(i == numberOfReadyToRunProcesses-1){
+			ComputerSystem_DebugMessage(108,SHORTTERMSCHEDULE,readyToRunQueue[i],proceso.priority);
 		}else{
-			ComputerSystem_DebugMessage(107,SHORTTERMSCHEDULE,proceso.programListIndex,proceso.priority);
+			ComputerSystem_DebugMessage(107,SHORTTERMSCHEDULE,readyToRunQueue[i],proceso.priority);
 		}
 	}
 }
-
