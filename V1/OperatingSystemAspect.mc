@@ -2659,8 +2659,9 @@ int sipID;
 int baseDaemonsInProgramList;
 
 
-int readyToRunQueue[4];
-int numberOfReadyToRunProcesses=0;
+
+
+
 
 
 int numberOfNotTerminatedUserProcesses=0;
@@ -2669,8 +2670,8 @@ int numberOfNotTerminatedUserProcesses=0;
 char * statesNames [5]={"NEW","READY","EXECUTING","BLOCKED","EXIT"};
 
 
-
-
+int readyToRunQueue [2][4];
+int numberOfReadyToRunProcesses [2] = {0,0};
 
 
 void OperatingSystem_Initialize(int daemonsIndex) {
@@ -2724,7 +2725,6 @@ void OperatingSystem_PrepareDaemons(int programListDaemonsBase) {
  programList[0]->executableName="SystemIdleProcess";
  programList[0]->arrivalTime=0;
  programList[0]->type=(unsigned int) 1;
-
  sipID=3%4;
 
 
@@ -2845,13 +2845,16 @@ void OperatingSystem_PCBInitialization(int PID, int initialPhysicalAddress, int 
  processTable[PID].priority=priority;
  processTable[PID].programListIndex=processPLIndex;
 
+
  if (programList[processPLIndex]->type == (unsigned int) 1) {
   processTable[PID].copyOfPCRegister=initialPhysicalAddress;
   processTable[PID].copyOfPSWRegister= ((unsigned int) 1) << EXECUTION_MODE_BIT;
+  processTable[PID].queueID=1;
  }
  else {
   processTable[PID].copyOfPCRegister=0;
   processTable[PID].copyOfPSWRegister=0;
+  processTable[PID].queueID=0;
  }
 
 }
@@ -2861,7 +2864,7 @@ void OperatingSystem_PCBInitialization(int PID, int initialPhysicalAddress, int 
 
 void OperatingSystem_MoveToTheREADYState(int PID) {
 
- if (Heap_add(PID, readyToRunQueue,1 ,&numberOfReadyToRunProcesses ,4)>=0) {
+ if (Heap_add(PID, readyToRunQueue[processTable[PID].queueID],1 ,&numberOfReadyToRunProcesses[processTable[PID].queueID] ,4)>=0) {
   processTable[PID].state=READY;
  }
 
@@ -2887,8 +2890,17 @@ int OperatingSystem_ShortTermScheduler() {
 int OperatingSystem_ExtractFromReadyToRun() {
 
  int selectedProcess=-1;
+ int tipoPila = 1;
 
- selectedProcess=Heap_poll(readyToRunQueue,1 ,&numberOfReadyToRunProcesses);
+ int i;
+ for(i=0; i< numberOfReadyToRunProcesses[0];i++){
+  if(readyToRunQueue[0][i]>=0){
+   tipoPila = 0;
+   break;
+  }
+ }
+
+ selectedProcess=Heap_poll(readyToRunQueue[tipoPila],1 ,&numberOfReadyToRunProcesses[tipoPila]);
 
 
  return selectedProcess;
@@ -3013,16 +3025,35 @@ void OperatingSystem_InterruptLogic(int entryPoint){
 
 
 void OperatingSystem_PrintReadyToRunQueue(){
+# 430 "OperatingSystem.c"
+ ComputerSystem_DebugMessage(112,'s');
 
-
+ ComputerSystem_DebugMessage(113,'s');
  int i;
- ComputerSystem_DebugMessage(106,'s');
- for(i = 0;i<numberOfReadyToRunProcesses;i++){
-  PCB proceso = processTable[readyToRunQueue[i]];
-  if(i == numberOfReadyToRunProcesses-1){
-   ComputerSystem_DebugMessage(108,'s',readyToRunQueue[i],proceso.priority);
-  }else{
-   ComputerSystem_DebugMessage(107,'s',readyToRunQueue[i],proceso.priority);
+ if(numberOfReadyToRunProcesses[0] == 0){
+  ComputerSystem_DebugMessage(117,'s');
+ }else{
+  for(i = 0; i< numberOfReadyToRunProcesses[0];i++){
+   PCB procesoUser = processTable[readyToRunQueue[0][i]];
+   if(i == numberOfReadyToRunProcesses[0]-1){
+    ComputerSystem_DebugMessage(116,'s',readyToRunQueue[0][i],procesoUser.priority);
+   }else{
+    ComputerSystem_DebugMessage(115,'s',readyToRunQueue[0][i],procesoUser.priority);
+   }
+  }
+ }
+ ComputerSystem_DebugMessage(114,'s');
+
+ if(numberOfReadyToRunProcesses[1] == 0){
+  ComputerSystem_DebugMessage(117,'s');
+ }else{
+  for(i = 0; i < numberOfReadyToRunProcesses[1];i++){
+   PCB procesoDaemon = processTable[readyToRunQueue[1][i]];
+   if(i == numberOfReadyToRunProcesses[1]-1){
+    ComputerSystem_DebugMessage(116,'s',readyToRunQueue[1][i],procesoDaemon.priority);
+   }else{
+    ComputerSystem_DebugMessage(115,'s',readyToRunQueue[1][i],procesoDaemon.priority);
+   }
   }
  }
 }
