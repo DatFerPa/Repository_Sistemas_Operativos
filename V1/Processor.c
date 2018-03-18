@@ -17,6 +17,8 @@ void Processor_ActivatePSW_Bit(const unsigned int);
 void Processor_DeactivatePSW_Bit(const unsigned int);
 void Processor_UpdatePSW();
 void Processor_CheckOverflow(int,int);
+void Processor_SetAccumulator(int);
+int Processor_GetAccumulator();
 
 // void Processor_SetRegisterA(int);
 
@@ -46,6 +48,7 @@ void Processor_InitializeInterruptVectorTable(int interruptVectorInitialAddress)
 
 	interruptVectorTable[SYSCALL_BIT]=interruptVectorInitialAddress;  // SYSCALL_BIT=2
 	interruptVectorTable[EXCEPTION_BIT]=interruptVectorInitialAddress+2; // EXCEPTION_BIT=6
+	interruptVectorTable[SYSCALL_YIELD]=interruptVectorInitialAddress+4; //SYSCALL_YIELD = 4
 }
 
 
@@ -149,6 +152,7 @@ void Processor_DecodeAndExecuteInstruction() {
 			MMU_readMemory();
 			
 			registerAccumulator_CPU = registerMBR_CPU.operand1 + registerIR_CPU.operand1;
+			Processor_CheckOverflow(registerMBR_CPU.operand1,registerIR_CPU.operand1);
 			registerPC_CPU++;
 			break;
 		// Instruction WRITE
@@ -186,25 +190,37 @@ void Processor_DecodeAndExecuteInstruction() {
 
 		// Instruction HALT
 		case 'h':
-			Processor_ActivatePSW_Bit(POWEROFF_BIT);
+			//Comprobamos con la máscara que esté activo el bit de ejecucion
+			if(Processor_PSW_BitState(EXECUTION_MODE_BIT)){
+				Processor_ActivatePSW_Bit(POWEROFF_BIT);				
+			}else{
+				//lanzamos una interrupcion de tipo excepcion
+				Processor_RaiseInterrupt(EXCEPTION_BIT);
+			}
 			break;
-			  
 		// Instruction OS
 		case 'o': // Make a operating system routine in entry point indicated by operand1
-			// Show final part of HARDWARE message with CPU registers
-			// Show message: " (PC: registerPC_CPU, Accumulator: registerAccumulator_CPU, PSW: registerPSW_CPU [Processor_ShowPSW()]\n
-			ComputerSystem_DebugMessage(3, HARDWARE,registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
-			// Not all operating system code is executed in simulated processor, but really must do it... 
-			OperatingSystem_InterruptLogic(registerIR_CPU.operand1);
-			registerPC_CPU++;
-			// Update PSW bits (ZERO_BIT, NEGATIVE_BIT, ...)
-			Processor_UpdatePSW();
-			return; // Note: message show before... for operating system messages after...
-
+			if(Processor_PSW_BitState(EXECUTION_MODE_BIT)){
+				// Show final part of HARDWARE message with CPU registers
+				// Show message: " (PC: registerPC_CPU, Accumulator: registerAccumulator_CPU, PSW: registerPSW_CPU [Processor_ShowPSW()]\n
+				ComputerSystem_DebugMessage(3, HARDWARE,registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
+				// Not all operating system code is executed in simulated processor, but really must do it... 
+				OperatingSystem_InterruptLogic(registerIR_CPU.operand1);
+				registerPC_CPU++;
+				// Update PSW bits (ZERO_BIT, NEGATIVE_BIT, ...)
+				Processor_UpdatePSW();
+				return; // Note: message show before... for operating system messages after...
+			}else{	
+				Processor_RaiseInterrupt(EXCEPTION_BIT);
+			}
 		// Instruction IRET
 		case 'y': // Return from a interrupt handle manager call
-			registerPC_CPU=Processor_CopyFromSystemStack(MAINMEMORYSIZE-1);
-			registerPSW_CPU=Processor_CopyFromSystemStack(MAINMEMORYSIZE-2);
+			if(Processor_PSW_BitState(EXECUTION_MODE_BIT)){
+				registerPC_CPU=Processor_CopyFromSystemStack(MAINMEMORYSIZE-1);
+				registerPSW_CPU=Processor_CopyFromSystemStack(MAINMEMORYSIZE-2);
+			}else{
+				Processor_RaiseInterrupt(EXCEPTION_BIT);
+			}	
 			break;		
 
 		// Unknown instruction
@@ -373,9 +389,9 @@ int Processor_GetMBR_Value(){
 }
 
 // Setter for the Accumulator
-// void Processor_SetAccumulator(int acc){
-//   registerAccumulator_CPU=acc;
-// }
+ void Processor_SetAccumulator(int acc){
+   registerAccumulator_CPU=acc;
+ }
 
 // Setter for the PC
 void Processor_SetPC(int pc){
@@ -388,9 +404,9 @@ void Processor_SetPC(int pc){
 // }
 
 // Getter for the Accumulator
-// int Processor_GetAccumulator() {
-//   return registerAccumulator_CPU;
-// }
+ int Processor_GetAccumulator() {
+   return registerAccumulator_CPU;
+ }
 
 // int Processor_GetPC() {
 //   return registerPC_CPU;

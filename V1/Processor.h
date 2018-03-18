@@ -11,7 +11,7 @@ enum PSW_BITS {POWEROFF_BIT=0, ZERO_BIT=1, NEGATIVE_BIT=2, OVERFLOW_BIT=3, EXECU
 
 // Enumerated type that connects bit positions in the interruptLines with
 // interrupt types 
-enum INT_BITS {SYSCALL_BIT=2, EXCEPTION_BIT=6};
+enum INT_BITS {SYSCALL_BIT=2, SYSCALL_YIELD=4, EXCEPTION_BIT=6};
 
 // Functions prototypes
 void Processor_InitializeInterruptVectorTable();
@@ -33,8 +33,8 @@ void Processor_SetMBR(MEMORYCELL *);
 // The OS needs to access the accumulator register to restore the context of
 // the process to which the processor is being assigned and to save the context
 // of the process being preempted for another ready process
-// void Processor_SetAccumulator(int);
-// int Processor_GetAccumulator();
+void Processor_SetAccumulator(int);
+int Processor_GetAccumulator();
 
 // The OS needs to access the PC register to restore the context of
 // the process to which the processor is being assigned
