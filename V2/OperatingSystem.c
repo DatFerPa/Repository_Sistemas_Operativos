@@ -56,6 +56,15 @@ char * statesNames [5]={"NEW","READY","EXECUTING","BLOCKED","EXIT"};
 int readyToRunQueue [NUMBEROFQUEUES][PROCESSTABLEMAXSIZE];
 int numberOfReadyToRunProcesses [NUMBEROFQUEUES] = {0,0};//posicion 0, numero procesos usuario, posicion 1 numero procesos daemons
 
+//numero de interrupciones de reloj
+int numberOfClockInterrupts = 0;
+
+// In OperatingSystem.c Exercise 5-b of V2
+// Heap with blocked porcesses sort by when to wakeup
+int sleepingProcessesQueue[PROCESSTABLEMAXSIZE];
+int numberOfSleepingProcesses=0;
+
+
 // Initial set of tasks of the OS
 void OperatingSystem_Initialize(int daemonsIndex) {
 	
@@ -435,6 +444,12 @@ void OperatingSystem_HandleSystemCall() {
 				
 			}
 			break;
+		case SYSCALL_SLEEP:
+			OperatingSystem_BlockTheActualProcess();
+			executingProcessID= OperatingSystem_ShortTermScheduler();
+			OperatingSystem_Dispatch(executingProcessID);
+			OperatingSystem_PrintStatus();
+			break;
 	}
 }
 	
@@ -490,4 +505,26 @@ void OperatingSystem_PrintReadyToRunQueue(){
 
 
 // In OperatingSystem.c Exercise 2-b of V2 
-void OperatingSystem_HandleClockInterrupt(){} 
+void OperatingSystem_HandleClockInterrupt(){
+	numberOfClockInterrupts++;
+	OperatingSystem_ShowTime(INTERRUPT);
+	ComputerSystem_DebugMessage(120,INTERRUPT,numberOfClockInterrupts);
+} 
+
+void OperatingSystem_SendToBlockedState(int PID){
+	char * estadoActual = statesNames[processTable[PID].state];
+	processTable[PID].whenToWakeUp = numberOfClockInterrupts +  processTable[PID].copyOfAcumulator + 1;
+	
+	if(Heap_add(PID,sleepingProcessesQueue,processTable[PID].whenToWakeUp,&numberOfSleepingProcesses,PROCESSTABLEMAXSIZE)>=0){
+		OperatingSystem_ShowTime(SYSPROC);
+		ComputerSystem_DebugMessage(110,SYSPROC,executingProcessID,estadoActual,statesNames[3]);
+		processTable[PID].state=BLOCKED;
+	}	
+}
+
+void OperatingSystem_BlockTheActualProcess(){
+	//salvamos el contexto pra cuando vallamos a despertar al proceso
+	OperatingSystem_SaveContext(executingProcessID);
+	
+	OperatingSystem_SendToBlockedState(executingProcessID);
+}	

@@ -11,7 +11,6 @@
 void Processor_FetchInstruction();
 void Processor_DecodeAndExecuteInstruction();
 void Processor_ManageInterrupts();
-void Processor_RaiseInterrupt(const unsigned int);
 void Processor_ACKInterrupt(const unsigned int);
 unsigned int Processor_GetInterruptLineStatus(const unsigned int);
 void Processor_ActivatePSW_Bit(const unsigned int);
@@ -49,8 +48,7 @@ void Processor_InitializeInterruptVectorTable(int interruptVectorInitialAddress)
 
 	interruptVectorTable[SYSCALL_BIT]=interruptVectorInitialAddress;  // SYSCALL_BIT=2
 	interruptVectorTable[EXCEPTION_BIT]=interruptVectorInitialAddress+2; // EXCEPTION_BIT=6
-	interruptVectorTable[SYSCALL_YIELD]=interruptVectorInitialAddress+4; //SYSCALL_YIELD = 4
-	interruptVectorTable[CLOCKINT_BIT]=interruptVectorInitialAddress+9; //Interrupcion de reloj
+	interruptVectorTable[CLOCKINT_BIT]=interruptVectorInitialAddress+4; //Interrupcion de reloj
 }
 
 
@@ -62,7 +60,7 @@ void Processor_InstructionCycleLoop() {
 	while (!Processor_PSW_BitState(POWEROFF_BIT)) {
 		Processor_FetchInstruction();
 		Processor_DecodeAndExecuteInstruction();
-		if (interruptLines_CPU)
+		if (interruptLines_CPU && !Processor_PSW_BitState(INTERRUPT_MASKED_BIT))
 			Processor_ManageInterrupts();
 	}
 }
@@ -256,6 +254,8 @@ void Processor_ManageInterrupts() {
 				// Copy PC and PSW registers in the system stack
 				Processor_CopyInSystemStack(MAINMEMORYSIZE-1, registerPC_CPU);
 				Processor_CopyInSystemStack(MAINMEMORYSIZE-2, registerPSW_CPU);	
+				//activar enmascaramineto de interrupciones
+				Processor_ActivatePSW_Bit(INTERRUPT_MASKED_BIT);
 				// Activate protected excution mode
 				Processor_ActivatePSW_Bit(EXECUTION_MODE_BIT);
 				// Call the appropriate OS interrupt-handling routine setting PC register
@@ -444,6 +444,8 @@ char * Processor_ShowPSW(){
 		pswmask[tam-ZERO_BIT]='Z';
 	if (Processor_PSW_BitState(POWEROFF_BIT))
 		pswmask[tam-POWEROFF_BIT]='S';
+	if (Processor_PSW_BitState(INTERRUPT_MASKED_BIT))
+		pswmask[tam-INTERRUPT_MASKED_BIT]='M';
 	return pswmask;
 }
 

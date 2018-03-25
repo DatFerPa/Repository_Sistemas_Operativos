@@ -531,27 +531,31 @@ extern void funlockfile( FILE *__stream) __attribute__  (( __nothrow__ , __leaf_
 # 913 "/usr/include/stdio.h" 3 4
 # 943 "/usr/include/stdio.h" 3 4
 # 6 "OperatingSystem.h" 2
-# 36 "OperatingSystem.h" 
+# 39 "OperatingSystem.h" 
 enum ProcessStates {NEW,READY,EXECUTING,BLOCKED,EXIT}; 
-#line 39 "OperatingSystem.h"
-enum SystemCallIdentifiers {SYSCALL_END=3,SYSCALL_PRINTEXECPID=5}; 
-#line 53 "OperatingSystem.h"
-typedef struct {int busy; int initialPhysicalAddress; int processSize; int state; int priority; int copyOfPCRegister; unsigned int copyOfPSWRegister; int copyOfAcumulator; int programListIndex; int queueID; 
-}PCB; 
+#line 42 "OperatingSystem.h"
+enum SystemCallIdentifiers {SYSCALL_END=3,SYSCALL_YIELD=4,SYSCALL_PRINTEXECPID=5,SYSCALL_SLEEP=7}; 
 #line 57 "OperatingSystem.h"
+typedef struct {int busy; int initialPhysicalAddress; int processSize; int state; int priority; int copyOfPCRegister; unsigned int copyOfPSWRegister; int copyOfAcumulator; int programListIndex; int queueID; int whenToWakeUp; 
+}PCB; 
+#line 61 "OperatingSystem.h"
 extern  PCB processTable[4]; 
-#line 58 "OperatingSystem.h"
-extern int OS_address_base; 
-#line 59 "OperatingSystem.h"
-extern int sipID; 
 #line 62 "OperatingSystem.h"
-void OperatingSystem_Initialize(); 
+extern int OS_address_base; 
 #line 63 "OperatingSystem.h"
+extern int sipID; 
+#line 66 "OperatingSystem.h"
+void OperatingSystem_Initialize(); 
+#line 67 "OperatingSystem.h"
 void OperatingSystem_InterruptLogic(int ); 
-#line 64 "OperatingSystem.h"
+#line 68 "OperatingSystem.h"
 void OperatingSystem_PrintReadyToRunQueue(); 
-#line 65 "OperatingSystem.h"
+#line 69 "OperatingSystem.h"
 void OperatingSystem_HandleClockInterrupt(); 
+#line 70 "OperatingSystem.h"
+void OperatingSystem_SendToBlockedState(int ); 
+#line 71 "OperatingSystem.h"
+void OperatingSystem_BlockTheActualProcess(); 
 #line 9 "OperatingSystemBase.h"
 int OperatingSystem_ObtainAnEntryInTheProcessTable(); 
 #line 10 "OperatingSystemBase.h"

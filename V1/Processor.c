@@ -48,7 +48,7 @@ void Processor_InitializeInterruptVectorTable(int interruptVectorInitialAddress)
 
 	interruptVectorTable[SYSCALL_BIT]=interruptVectorInitialAddress;  // SYSCALL_BIT=2
 	interruptVectorTable[EXCEPTION_BIT]=interruptVectorInitialAddress+2; // EXCEPTION_BIT=6
-	interruptVectorTable[SYSCALL_YIELD]=interruptVectorInitialAddress+4; //SYSCALL_YIELD = 4
+	//interruptVectorTable[SYSCALL_YIELD]=interruptVectorInitialAddress+4; //SYSCALL_YIELD = 4
 }
 
 

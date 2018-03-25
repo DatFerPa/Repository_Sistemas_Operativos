@@ -32,11 +32,14 @@
 #define USERPROCESSQUEUE 0
 #define DAEMONSQUEUE 1
 
+//Ejercicio V2 5-c
+#define SLEEPINGQUEUE
+
 // Enumerated type containing all the possible process states
 enum ProcessStates { NEW, READY, EXECUTING, BLOCKED, EXIT};
 
 // Enumerated type containing the list of system calls and their numeric identifiers
-enum SystemCallIdentifiers { SYSCALL_END=3, SYSCALL_PRINTEXECPID=5};
+enum SystemCallIdentifiers { SYSCALL_END=3, SYSCALL_YIELD=4, SYSCALL_PRINTEXECPID=5, SYSCALL_SLEEP=7};
 
 // A PCB contains all of the information about a process that is needed by the OS
 typedef struct {
@@ -50,6 +53,7 @@ typedef struct {
 	int copyOfAcumulator;
 	int programListIndex;
 	int queueID;
+	int whenToWakeUp;
 } PCB;
 
 // These "extern" declaration enables other source code files to gain access
@@ -63,6 +67,8 @@ void OperatingSystem_Initialize();
 void OperatingSystem_InterruptLogic(int);
 void OperatingSystem_PrintReadyToRunQueue();
 void OperatingSystem_HandleClockInterrupt();
+void OperatingSystem_SendToBlockedState(int);
+void OperatingSystem_BlockTheActualProcess();
 
 
 #endif

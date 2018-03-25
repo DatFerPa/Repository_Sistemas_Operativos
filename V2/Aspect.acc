@@ -902,11 +902,11 @@ extern void funlockfile (FILE *__stream) __attribute__ ((__nothrow__ , __leaf__)
 # 943 "/usr/include/stdio.h" 3 4
 
 # 6 "OperatingSystem.h" 2
-# 36 "OperatingSystem.h"
+# 39 "OperatingSystem.h"
 enum ProcessStates { NEW, READY, EXECUTING, BLOCKED, EXIT};
 
 
-enum SystemCallIdentifiers { SYSCALL_END=3, SYSCALL_PRINTEXECPID=5};
+enum SystemCallIdentifiers { SYSCALL_END=3, SYSCALL_YIELD=4, SYSCALL_PRINTEXECPID=5, SYSCALL_SLEEP=7};
 
 
 typedef struct {
@@ -920,6 +920,7 @@ typedef struct {
  int copyOfAcumulator;
  int programListIndex;
  int queueID;
+ int whenToWakeUp;
 } PCB;
 
 
@@ -933,6 +934,8 @@ void OperatingSystem_Initialize();
 void OperatingSystem_InterruptLogic(int);
 void OperatingSystem_PrintReadyToRunQueue();
 void OperatingSystem_HandleClockInterrupt();
+void OperatingSystem_SendToBlockedState(int);
+void OperatingSystem_BlockTheActualProcess();
 # 6 "OperatingSystemBase.h" 2
 
 
