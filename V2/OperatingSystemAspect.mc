@@ -2675,7 +2675,7 @@ void OperatingSystem_PreemptRunningProcess();
 int OperatingSystem_CreateProcess(int);
 int OperatingSystem_ObtainMainMemory(int, int);
 int OperatingSystem_ShortTermScheduler();
-int OperatingSystem_ExtractFromReadyToRun();
+int OperatingSystem_ExtractFromReadyToRun(int queue);
 void OperatingSystem_HandleException();
 void OperatingSystem_HandleSystemCall();
 
@@ -2819,6 +2819,7 @@ int OperatingSystem_LongTermScheduler() {
     numberOfNotTerminatedUserProcesses++;
 
    OperatingSystem_MoveToTheREADYState(PID);
+   OperatingSystem_PrintStatus();
   }
  }
 
@@ -2929,7 +2930,7 @@ void OperatingSystem_MoveToTheREADYState(int PID) {
   processTable[PID].state=READY;
  }
 
- OperatingSystem_PrintReadyToRunQueue();
+
 }
 
 
@@ -2940,28 +2941,20 @@ int OperatingSystem_ShortTermScheduler() {
 
  int selectedProcess;
 
- selectedProcess=OperatingSystem_ExtractFromReadyToRun();
-
+ selectedProcess=OperatingSystem_ExtractFromReadyToRun(0);
+ if(selectedProcess == -1){
+  selectedProcess=OperatingSystem_ExtractFromReadyToRun(1);
+ }
  return selectedProcess;
 }
 
 
 
-int OperatingSystem_ExtractFromReadyToRun() {
+int OperatingSystem_ExtractFromReadyToRun(int queue) {
 
  int selectedProcess=-1;
- int tipoPila = 1;
 
- int i;
- for(i=0; i< numberOfReadyToRunProcesses[0];i++){
-  if(readyToRunQueue[0][i]>=0){
-   tipoPila = 0;
-   break;
-  }
- }
-
- selectedProcess=Heap_poll(readyToRunQueue[tipoPila],1 ,&numberOfReadyToRunProcesses[tipoPila]);
-
+ selectedProcess=Heap_poll(readyToRunQueue[queue],1 ,&numberOfReadyToRunProcesses[queue]);
 
  return selectedProcess;
 }
@@ -3031,6 +3024,9 @@ void OperatingSystem_HandleException() {
  ComputerSystem_DebugMessage(23,'p',executingProcessID);
 
  OperatingSystem_TerminateProcess();
+
+
+ OperatingSystem_PrintStatus();
 }
 
 
@@ -3078,6 +3074,7 @@ void OperatingSystem_HandleSystemCall() {
    OperatingSystem_ShowTime('p');
    ComputerSystem_DebugMessage(25,'p',executingProcessID);
    OperatingSystem_TerminateProcess();
+   OperatingSystem_PrintStatus();
    break;
   case SYSCALL_YIELD:
 
@@ -3094,7 +3091,7 @@ void OperatingSystem_HandleSystemCall() {
 
     OperatingSystem_PreemptRunningProcess();
     OperatingSystem_Dispatch(OperatingSystem_ShortTermScheduler());
-
+    OperatingSystem_PrintStatus();
    }
    break;
   case SYSCALL_SLEEP:
@@ -3157,11 +3154,45 @@ void OperatingSystem_PrintReadyToRunQueue(){
 }
 
 
-
 void OperatingSystem_HandleClockInterrupt(){
  numberOfClockInterrupts++;
+
+
+
+
  OperatingSystem_ShowTime('i');
  ComputerSystem_DebugMessage(120,'i',numberOfClockInterrupts);
+ int numProcSacados = 0;
+ int exit = 0;
+ while(exit==0){
+
+  int idQueue = Heap_getFirst(sleepingProcessesQueue,numberOfSleepingProcesses);
+  if(processTable[idQueue].whenToWakeUp <= numberOfClockInterrupts && idQueue != -1){
+   idQueue = Heap_poll(sleepingProcessesQueue,0, &numberOfSleepingProcesses);
+   OperatingSystem_MoveToTheREADYState(idQueue);
+   numProcSacados++;
+  }else{
+
+
+   exit = 1;
+  }
+ }
+ if(numProcSacados != 0){
+
+
+  int candidato = OperatingSystem_ShortTermScheduler();
+  if(processTable[candidato].priority < processTable[executingProcessID].priority){
+   int antiguo = executingProcessID;
+   OperatingSystem_PreemptRunningProcess();
+   OperatingSystem_Dispatch(candidato);
+   OperatingSystem_ShowTime('s');
+   ComputerSystem_DebugMessage(121,'s',antiguo,candidato);
+  }else{
+
+   Heap_add(candidato, readyToRunQueue[processTable[candidato].queueID],1 ,&numberOfReadyToRunProcesses[processTable[candidato].queueID] ,4);
+  }
+  OperatingSystem_PrintStatus();
+ }
 }
 
 void OperatingSystem_SendToBlockedState(int PID){

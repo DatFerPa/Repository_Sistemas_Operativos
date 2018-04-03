@@ -22,7 +22,7 @@ void OperatingSystem_PreemptRunningProcess();
 int OperatingSystem_CreateProcess(int);
 int OperatingSystem_ObtainMainMemory(int, int);
 int OperatingSystem_ShortTermScheduler();
-int OperatingSystem_ExtractFromReadyToRun();
+int OperatingSystem_ExtractFromReadyToRun(int queue);
 void OperatingSystem_HandleException();
 void OperatingSystem_HandleSystemCall();
 
@@ -166,6 +166,7 @@ int OperatingSystem_LongTermScheduler() {
 				numberOfNotTerminatedUserProcesses++;
 			// Move process to the ready state			
 			OperatingSystem_MoveToTheREADYState(PID);
+			OperatingSystem_PrintStatus();
 		}	
 	}
 
@@ -276,7 +277,7 @@ void OperatingSystem_MoveToTheREADYState(int PID) {
 		processTable[PID].state=READY;
 	}	
 	//ejercicio 9 V1
-	OperatingSystem_PrintReadyToRunQueue();	
+	//OperatingSystem_PrintReadyToRunQueue();	
 }
 
 
@@ -286,29 +287,21 @@ void OperatingSystem_MoveToTheREADYState(int PID) {
 int OperatingSystem_ShortTermScheduler() {
 	
 	int selectedProcess;
-
-	selectedProcess=OperatingSystem_ExtractFromReadyToRun();
 	
+	selectedProcess=OperatingSystem_ExtractFromReadyToRun(USERPROCESSQUEUE);
+	if(selectedProcess == NOPROCESS){
+		selectedProcess=OperatingSystem_ExtractFromReadyToRun(DAEMONSQUEUE);
+	}
 	return selectedProcess;
 }
 
 
 // Return PID of more priority process in the READY queue
-int OperatingSystem_ExtractFromReadyToRun() {
-  
-	int selectedProcess=NOPROCESS;
-	int tipoPila = DAEMONSQUEUE;
-	//miramos si tenemos algun proceso en la pila de procesos de usuario
-	int i;
-	for(i=0; i< numberOfReadyToRunProcesses[USERPROCESSQUEUE];i++){
-		if(readyToRunQueue[USERPROCESSQUEUE][i]>=0){
-			tipoPila = USERPROCESSQUEUE;
-			break;
-		}
-	}
-
-	selectedProcess=Heap_poll(readyToRunQueue[tipoPila],QUEUE_PRIORITY ,&numberOfReadyToRunProcesses[tipoPila]);
+int OperatingSystem_ExtractFromReadyToRun(int queue) {
 	
+	int selectedProcess=NOPROCESS;
+	//miramos si tenemos algun proceso en la pila de procesos de usuario
+	selectedProcess=Heap_poll(readyToRunQueue[queue],QUEUE_PRIORITY ,&numberOfReadyToRunProcesses[queue]);
 	// Return most priority process or NOPROCESS if empty queue
 	return selectedProcess; 
 }
@@ -378,12 +371,15 @@ void OperatingSystem_HandleException() {
 	ComputerSystem_DebugMessage(23,SYSPROC,executingProcessID);
 	
 	OperatingSystem_TerminateProcess();
+	
+	//print status despues del manejador de instrucciones
+	OperatingSystem_PrintStatus();
 }
 
 
 // All tasks regarding the removal of the process
 void OperatingSystem_TerminateProcess() {
-  
+	
 	int selectedProcess;
   	
 	OperatingSystem_ShowTime(SYSPROC);
@@ -425,6 +421,7 @@ void OperatingSystem_HandleSystemCall() {
 			OperatingSystem_ShowTime(SYSPROC);
 			ComputerSystem_DebugMessage(25,SYSPROC,executingProcessID);
 			OperatingSystem_TerminateProcess();
+			OperatingSystem_PrintStatus();
 			break;
 		case SYSCALL_YIELD:
 			//cambio de proceso
@@ -441,7 +438,7 @@ void OperatingSystem_HandleSystemCall() {
 				//metodo para sacar el proceso actual del procesador y toda la gestion de cosas
 				OperatingSystem_PreemptRunningProcess();
 				OperatingSystem_Dispatch(OperatingSystem_ShortTermScheduler());	
-				
+				OperatingSystem_PrintStatus();
 			}
 			break;
 		case SYSCALL_SLEEP:
@@ -503,13 +500,47 @@ void OperatingSystem_PrintReadyToRunQueue(){
 	}
 }
 
-
 // In OperatingSystem.c Exercise 2-b of V2 
 void OperatingSystem_HandleClockInterrupt(){
 	numberOfClockInterrupts++;
+	/*
+		int sleepingProcessesQueue[PROCESSTABLEMAXSIZE];
+		int numberOfSleepingProcesses=0;
+	*/
 	OperatingSystem_ShowTime(INTERRUPT);
 	ComputerSystem_DebugMessage(120,INTERRUPT,numberOfClockInterrupts);
-} 
+	int numProcSacados = 0;
+	int exit = 0;
+	while(exit==0){
+		//sacamos el proceso de la cola de dormidos
+		int idQueue = Heap_getFirst(sleepingProcessesQueue,numberOfSleepingProcesses);
+		if(processTable[idQueue].whenToWakeUp <= numberOfClockInterrupts && idQueue != NOPROCESS){
+			idQueue = Heap_poll(sleepingProcessesQueue,QUEUE_WAKEUP, &numberOfSleepingProcesses);
+			OperatingSystem_MoveToTheREADYState(idQueue);
+			numProcSacados++;
+		}else{
+			//hacemos esto cuando el proceso que s eha sacado no tiene un tiempo menor que el numero
+			// de interrupciones de roloj
+			exit = 1;
+		}
+	}
+	if(numProcSacados != 0){
+		//mirar si el proceso que se encuentra ejecutndose tiene menos prioridad que el
+		//primero de la cola de listos
+		int candidato = OperatingSystem_ShortTermScheduler();
+		if(processTable[candidato].priority < processTable[executingProcessID].priority){
+			int antiguo = executingProcessID;
+			OperatingSystem_PreemptRunningProcess();
+			OperatingSystem_Dispatch(candidato);
+			OperatingSystem_ShowTime(SHORTTERMSCHEDULE);
+			ComputerSystem_DebugMessage(121,SHORTTERMSCHEDULE,antiguo,candidato);
+		}else{
+			//lo volvemos a colocar en su pila
+			Heap_add(candidato, readyToRunQueue[processTable[candidato].queueID],QUEUE_PRIORITY ,&numberOfReadyToRunProcesses[processTable[candidato].queueID] ,PROCESSTABLEMAXSIZE);
+		}
+		OperatingSystem_PrintStatus();	
+	}	
+}
 
 void OperatingSystem_SendToBlockedState(int PID){
 	char * estadoActual = statesNames[processTable[PID].state];

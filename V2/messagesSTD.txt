@@ -21,3 +21,4 @@
 117,\n
 118,Process [@G%d@@] transfers control of the processor to process[@G%d@@]\n
 120,@CClock interrupt number [%d] has occurred@@\n
+121,Process [@G%d@@] is thrown out of the processor by process [@G%d@@]\n

@@ -5,4 +5,5 @@ OS 2 // SysCall Interrupt
 YRET
 OS 6 // Exception Interrupt
 YRET
-
+OS 9
+YRET

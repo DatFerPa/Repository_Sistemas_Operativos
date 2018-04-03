@@ -46,7 +46,7 @@ void Processor_InitializeInterruptVectorTable(int interruptVectorInitialAddress)
 	for (i=0; i< INTERRUPTTYPES;i++)  // Inicialice all to inicial YRET
 		interruptVectorTable[i]=interruptVectorInitialAddress-1;  
 
-	interruptVectorTable[SYSCALL_BIT]=interruptVectorInitialAddress;  // SYSCALL_BIT=2
+	interruptVectorTable[SYSCALL_BIT]=interruptVectorInitialAddress; // SYSCALL_BIT=2
 	interruptVectorTable[EXCEPTION_BIT]=interruptVectorInitialAddress+2; // EXCEPTION_BIT=6
 	interruptVectorTable[CLOCKINT_BIT]=interruptVectorInitialAddress+4; //Interrupcion de reloj
 }
