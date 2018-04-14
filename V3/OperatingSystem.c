@@ -88,15 +88,17 @@ void OperatingSystem_Initialize(int daemonsIndex) {
 	
 	OperatingSystem_PrepareDaemons(daemonsIndex);
 	
+	//V3 ejercicio 0-c
+	ComputerSystem_FillInArrivalTimeQueue();
+	//V3 ejercicio 0-d
+	OperatingSystem_PrintStatus();
 	// Create all user processes from the information given in the command line
 	procesosCreados = OperatingSystem_LongTermScheduler();
 	if(procesosCreados <= 1){
 		//Se pone uno, porque se crea un proceso del  sistema y queremos solo los de usuarios
 		//Si no se pueden crear procesos, se apaga la simulacion
 		OperatingSystem_ReadyToShutdown();
-	}else{
-		OperatingSystem_PrintStatus();
-	}	
+	}
 	
 	if (strcmp(programList[processTable[sipID].programListIndex]->executableName,"SystemIdleProcess")) {
 		// Show message "ERROR: Missing SIP program!\n"
@@ -139,9 +141,44 @@ void OperatingSystem_PrepareDaemons(int programListDaemonsBase) {
 // Initially, it creates a process from each program specified in the 
 // 			command lineand daemons programs
 int OperatingSystem_LongTermScheduler() {
-	int PID, i,
+	int PID,
 		numberOfSuccessfullyCreatedProcesses=0;
-	
+		
+	//hacemos la comprovación del numero de procesos con isThereANewprogram
+	//V3 ejercicio 2
+	int isThereNewProg = OperatingSystem_IsThereANewProgram();
+	while(isThereNewProg == 1){
+		int pidAux = Heap_poll(arrivalTimeQueue,QUEUE_ARRIVAL,&numberOfProgramsInArrivalTimeQueue);
+		
+		PID = OperatingSystem_CreateProcess(pidAux);
+		if(PID < 0){
+			PROGRAMS_DATA *progamaFallido=programList[PID];
+			if(PID == NOFREEENTRY){	
+				OperatingSystem_ShowTime(ERROR);
+				ComputerSystem_DebugMessage(103,ERROR,progamaFallido->executableName);
+			}
+			if(PID == PROGRAMDOESNOTEXIST){
+				OperatingSystem_ShowTime(ERROR);
+				ComputerSystem_DebugMessage(104,ERROR,progamaFallido->executableName,"it does not exist");
+			}
+			if(PID == PROGRAMNOTVALID){
+				OperatingSystem_ShowTime(ERROR);
+				ComputerSystem_DebugMessage(104,ERROR,progamaFallido->executableName,"invalid priority or size");
+			}
+			if(PID == TOOBIGPROCESS){
+				OperatingSystem_ShowTime(ERROR);
+				ComputerSystem_DebugMessage(105,ERROR,progamaFallido->executableName);
+			}
+		}else{
+			numberOfSuccessfullyCreatedProcesses++;
+			if (programList[PID]->type==USERPROGRAM) 
+				numberOfNotTerminatedUserProcesses++;
+			// Move process to the ready state			
+			OperatingSystem_MoveToTheREADYState(PID);
+			OperatingSystem_PrintStatus();
+		}
+	}	
+	/*
 	for (i=0; programList[i]!=NULL && i<PROGRAMSMAXNUMBER ; i++) {
 		PID=OperatingSystem_CreateProcess(i);
 		if(PID < 0){
@@ -163,17 +200,17 @@ int OperatingSystem_LongTermScheduler() {
 				ComputerSystem_DebugMessage(105,ERROR,progamaFallido->executableName);
 			}
 		}else{
-			numberOfSuccessfullyCreatedProcesses++;			
+			numberOfSuccessfullyCreatedProcesses++;
 			if (programList[i]->type==USERPROGRAM) 
 				numberOfNotTerminatedUserProcesses++;
 			// Move process to the ready state			
 			OperatingSystem_MoveToTheREADYState(PID);
-			
-		}	
+			OperatingSystem_PrintStatus();
+		}
 	}
+	*/
 
 	// Return the number of succesfully created processes
-		
 	return numberOfSuccessfullyCreatedProcesses;
 }
 
@@ -207,10 +244,6 @@ int OperatingSystem_CreateProcess(int indexOfExecutableProgram) {
 
 	// Obtain the priority for the process
 	priority=OperatingSystem_ObtainPriority(programFile);
-	
-	if(priority == PROGRAMNOTVALID){
-		return PROGRAMNOTVALID;
-	}	
 	
 	// Obtain enough memory space
  	loadingPhysicalAddress=OperatingSystem_ObtainMainMemory(processSize, PID);
@@ -524,10 +557,9 @@ void OperatingSystem_HandleClockInterrupt(){
 		if(processTable[idQueue].whenToWakeUp <= numberOfClockInterrupts && idQueue != NOPROCESS){
 			idQueue = Heap_poll(sleepingProcessesQueue,QUEUE_WAKEUP, &numberOfSleepingProcesses);
 			OperatingSystem_MoveToTheREADYState(idQueue);
-			OperatingSystem_PrintStatus();
 			numProcSacados++;
 		}else{
-			//hacemos esto cuando el proceso que se ha sacado no tiene un tiempo menor que el numero
+			//hacemos esto cuando el proceso que s eha sacado no tiene un tiempo menor que el numero
 			// de interrupciones de roloj
 			exit = 1;
 		}
@@ -538,25 +570,21 @@ void OperatingSystem_HandleClockInterrupt(){
 		int candidato = OperatingSystem_ShortTermScheduler();
 		if(processTable[candidato].priority < processTable[executingProcessID].priority){
 			int antiguo = executingProcessID;
-			OperatingSystem_ShowTime(SHORTTERMSCHEDULE);
-			ComputerSystem_DebugMessage(121,SHORTTERMSCHEDULE,antiguo,candidato);
 			OperatingSystem_PreemptRunningProcess();
 			OperatingSystem_Dispatch(candidato);
-			OperatingSystem_PrintStatus();
+			OperatingSystem_ShowTime(SHORTTERMSCHEDULE);
+			ComputerSystem_DebugMessage(121,SHORTTERMSCHEDULE,antiguo,candidato);
 		}else{
 			//lo volvemos a colocar en su pila
 			Heap_add(candidato, readyToRunQueue[processTable[candidato].queueID],QUEUE_PRIORITY ,&numberOfReadyToRunProcesses[processTable[candidato].queueID] ,PROCESSTABLEMAXSIZE);
 		}
+		OperatingSystem_PrintStatus();	
 	}	
 }
 
 void OperatingSystem_SendToBlockedState(int PID){
 	char * estadoActual = statesNames[processTable[PID].state];
-	int absAcumulator = processTable[PID].copyOfAcumulator;
-	if(absAcumulator <0){
-		absAcumulator = absAcumulator * -1;
-	}	
-	processTable[PID].whenToWakeUp = numberOfClockInterrupts + absAcumulator  + 1;
+	processTable[PID].whenToWakeUp = numberOfClockInterrupts +  processTable[PID].copyOfAcumulator + 1;
 	
 	if(Heap_add(PID,sleepingProcessesQueue,processTable[PID].whenToWakeUp,&numberOfSleepingProcesses,PROCESSTABLEMAXSIZE)>=0){
 		OperatingSystem_ShowTime(SYSPROC);
@@ -571,3 +599,9 @@ void OperatingSystem_BlockTheActualProcess(){
 	
 	OperatingSystem_SendToBlockedState(executingProcessID);
 }	
+
+//V3 ejercicio 1
+int OperatingSystem_GetExecutingProcessID(){
+	return executingProcessID;
+	
+}

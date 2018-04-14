@@ -5,8 +5,6 @@
 #include "Clock.h"
 #include <stdio.h>
 #include <string.h>
-//cosas
-//#include "OperatingSystemBase.h"
 
 // Internals Functions prototypes
 
@@ -239,10 +237,8 @@ void Processor_DecodeAndExecuteInstruction() {
 	
 	// Show final part of HARDWARE message with	CPU registers
 	// Show message: " (PC: registerPC_CPU, Accumulator: registerAccumulator_CPU, PSW: registerPSW_CPU [Processor_ShowPSW()]\n
-	ComputerSystem_DebugMessage(3, HARDWARE,registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
-	
-	//cosas
-	//OperatingSystem_PrintStatus();
+	//ComputerSystem_DebugMessage(3, HARDWARE,registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
+	ComputerSystem_DebugMessage(130,HARDWARE,OperatingSystem_GetExecutingProcessID(),registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
 }
 	
 	
