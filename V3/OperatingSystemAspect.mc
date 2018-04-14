@@ -2756,13 +2756,13 @@ void OperatingSystem_Initialize(int daemonsIndex) {
  OperatingSystem_PrintStatus();
 
  procesosCreados = OperatingSystem_LongTermScheduler();
- if(procesosCreados <= 1){
-
-
+ if(procesosCreados <= 1 && OperatingSystem_IsThereANewProgram() == -1){
   OperatingSystem_ReadyToShutdown();
+ }else{
+  OperatingSystem_PrintStatus();
  }
 
- if (strcmp(programList[processTable[sipID].programListIndex]->executableName,"SystemIdleProcess")) {
+ if(strcmp(programList[processTable[sipID].programListIndex]->executableName,"SystemIdleProcess")) {
 
   OperatingSystem_ShowTime('d');
   ComputerSystem_DebugMessage(21,'d');
@@ -2808,13 +2808,12 @@ int OperatingSystem_LongTermScheduler() {
 
 
 
- int isThereNewProg = OperatingSystem_IsThereANewProgram();
- while(isThereNewProg == 1){
+ while(OperatingSystem_IsThereANewProgram() == 1){
   int pidAux = Heap_poll(arrivalTimeQueue,2,&numberOfProgramsInArrivalTimeQueue);
 
   PID = OperatingSystem_CreateProcess(pidAux);
   if(PID < 0){
-   PROGRAMS_DATA *progamaFallido=programList[PID];
+   PROGRAMS_DATA *progamaFallido=programList[pidAux];
    if(PID == -3){
     OperatingSystem_ShowTime('e');
     ComputerSystem_DebugMessage(103,'e',progamaFallido->executableName);
@@ -2833,14 +2832,13 @@ int OperatingSystem_LongTermScheduler() {
    }
   }else{
    numberOfSuccessfullyCreatedProcesses++;
-   if (programList[PID]->type==(unsigned int) 0)
+   if (programList[pidAux]->type==(unsigned int) 0)
     numberOfNotTerminatedUserProcesses++;
 
    OperatingSystem_MoveToTheREADYState(PID);
-   OperatingSystem_PrintStatus();
   }
  }
-# 214 "OperatingSystem.c"
+
  return numberOfSuccessfullyCreatedProcesses;
 }
 
@@ -2874,7 +2872,9 @@ int OperatingSystem_CreateProcess(int indexOfExecutableProgram) {
 
 
  priority=OperatingSystem_ObtainPriority(programFile);
-
+ if(priority == -2){
+  return -2;
+ }
 
   loadingPhysicalAddress=OperatingSystem_ObtainMainMemory(processSize, PID);
  if(loadingPhysicalAddress == -4){
@@ -2935,7 +2935,6 @@ void OperatingSystem_PCBInitialization(int PID, int initialPhysicalAddress, int 
  }
 
 }
-
 
 
 
@@ -3033,7 +3032,6 @@ void OperatingSystem_SaveContext(int PID) {
 }
 
 
-
 void OperatingSystem_HandleException() {
 
 
@@ -3047,7 +3045,6 @@ void OperatingSystem_HandleException() {
 }
 
 
-
 void OperatingSystem_TerminateProcess() {
 
  int selectedProcess;
@@ -3059,7 +3056,7 @@ void OperatingSystem_TerminateProcess() {
 
 
  numberOfNotTerminatedUserProcesses--;
- if (numberOfNotTerminatedUserProcesses<=0) {
+ if (numberOfNotTerminatedUserProcesses<=0 && OperatingSystem_IsThereANewProgram() == -1) {
 
   OperatingSystem_ReadyToShutdown();
  }
@@ -3187,6 +3184,7 @@ void OperatingSystem_HandleClockInterrupt(){
   if(processTable[idQueue].whenToWakeUp <= numberOfClockInterrupts && idQueue != -1){
    idQueue = Heap_poll(sleepingProcessesQueue,0, &numberOfSleepingProcesses);
    OperatingSystem_MoveToTheREADYState(idQueue);
+   OperatingSystem_PrintStatus();
    numProcSacados++;
   }else{
 
@@ -3194,27 +3192,37 @@ void OperatingSystem_HandleClockInterrupt(){
    exit = 1;
   }
  }
- if(numProcSacados != 0){
+
+ int numCreados = OperatingSystem_LongTermScheduler();
+ if(numCreados > 0){
+  OperatingSystem_PrintStatus();
+ }
+
+ if(numProcSacados != 0 || numCreados > 0){
 
 
   int candidato = OperatingSystem_ShortTermScheduler();
   if(processTable[candidato].priority < processTable[executingProcessID].priority){
    int antiguo = executingProcessID;
-   OperatingSystem_PreemptRunningProcess();
-   OperatingSystem_Dispatch(candidato);
    OperatingSystem_ShowTime('s');
    ComputerSystem_DebugMessage(121,'s',antiguo,candidato);
+   OperatingSystem_PreemptRunningProcess();
+   OperatingSystem_Dispatch(candidato);
+   OperatingSystem_PrintStatus();
   }else{
 
    Heap_add(candidato, readyToRunQueue[processTable[candidato].queueID],1 ,&numberOfReadyToRunProcesses[processTable[candidato].queueID] ,4);
   }
-  OperatingSystem_PrintStatus();
  }
 }
 
 void OperatingSystem_SendToBlockedState(int PID){
  char * estadoActual = statesNames[processTable[PID].state];
- processTable[PID].whenToWakeUp = numberOfClockInterrupts + processTable[PID].copyOfAcumulator + 1;
+ int absAcumulator = processTable[PID].copyOfAcumulator;
+ if(absAcumulator <0){
+  absAcumulator = absAcumulator * -1;
+ }
+ processTable[PID].whenToWakeUp = numberOfClockInterrupts + absAcumulator + 1;
 
  if(Heap_add(PID,sleepingProcessesQueue,processTable[PID].whenToWakeUp,&numberOfSleepingProcesses,4)>=0){
   OperatingSystem_ShowTime('p');
@@ -3233,5 +3241,4 @@ void OperatingSystem_BlockTheActualProcess(){
 
 int OperatingSystem_GetExecutingProcessID(){
  return executingProcessID;
-
 }

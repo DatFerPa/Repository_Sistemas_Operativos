@@ -23,4 +23,4 @@
 120,@CClock interrupt number [%d] has occurred@@\n
 121,Process [@G%d@@] is thrown out of the processor by process [@G%d@@]\n
 
-130,(PID: @G%d@@, PC: @R%d@@, Accumulator: @R%d@@, PSW: @R%d@@ [@R%s@@])\n
+130, (PID: @G%d@@, PC: @R%d@@, Accumulator: @R%d@@, PSW: @R%d@@ [@R%s@@])\n

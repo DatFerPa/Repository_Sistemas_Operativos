@@ -83,7 +83,7 @@ void OperatingSystem_Initialize(int daemonsIndex) {
 	
 	// Initialization of the interrupt vector table of the processor
 	Processor_InitializeInterruptVectorTable(OS_address_base+1);
-		
+	
 	// Create all system daemon processes
 	
 	OperatingSystem_PrepareDaemons(daemonsIndex);
@@ -94,15 +94,13 @@ void OperatingSystem_Initialize(int daemonsIndex) {
 	OperatingSystem_PrintStatus();
 	// Create all user processes from the information given in the command line
 	procesosCreados = OperatingSystem_LongTermScheduler();
-	if(procesosCreados <= 1){
-		//Se pone uno, porque se crea un proceso del  sistema y queremos solo los de usuarios
-		//Si no se pueden crear procesos, se apaga la simulacion
+	if(procesosCreados <= 1 && OperatingSystem_IsThereANewProgram() == -1){		
 		OperatingSystem_ReadyToShutdown();
 	}else{
 		OperatingSystem_PrintStatus();
 	}
 	
-	if (strcmp(programList[processTable[sipID].programListIndex]->executableName,"SystemIdleProcess")) {
+	if(strcmp(programList[processTable[sipID].programListIndex]->executableName,"SystemIdleProcess")) {
 		// Show message "ERROR: Missing SIP program!\n"
 		OperatingSystem_ShowTime(SHUTDOWN);
 		ComputerSystem_DebugMessage(21,SHUTDOWN);
@@ -147,14 +145,13 @@ int OperatingSystem_LongTermScheduler() {
 		numberOfSuccessfullyCreatedProcesses=0;
 		
 	//hacemos la comprovación del numero de procesos con isThereANewprogram
-	//V3 ejercicio 2
-	int isThereNewProg = OperatingSystem_IsThereANewProgram();
-	while(isThereNewProg == 1){
+	//V3 ejercicio 2	
+	while(OperatingSystem_IsThereANewProgram() == 1){
 		int pidAux = Heap_poll(arrivalTimeQueue,QUEUE_ARRIVAL,&numberOfProgramsInArrivalTimeQueue);
 		
 		PID = OperatingSystem_CreateProcess(pidAux);
 		if(PID < 0){
-			PROGRAMS_DATA *progamaFallido=programList[PID];
+			PROGRAMS_DATA *progamaFallido=programList[pidAux];
 			if(PID == NOFREEENTRY){	
 				OperatingSystem_ShowTime(ERROR);
 				ComputerSystem_DebugMessage(103,ERROR,progamaFallido->executableName);
@@ -173,12 +170,12 @@ int OperatingSystem_LongTermScheduler() {
 			}
 		}else{
 			numberOfSuccessfullyCreatedProcesses++;
-			if (programList[PID]->type==USERPROGRAM) 
+			if (programList[pidAux]->type==USERPROGRAM)
 				numberOfNotTerminatedUserProcesses++;
 			// Move process to the ready state			
 			OperatingSystem_MoveToTheREADYState(PID);			
 		}
-	}	
+	}
 	// Return the number of succesfully created processes
 	return numberOfSuccessfullyCreatedProcesses;
 }
@@ -277,7 +274,6 @@ void OperatingSystem_PCBInitialization(int PID, int initialPhysicalAddress, int 
 
 }
 
-
 // Move a process to the READY state: it will be inserted, depending on its priority, in
 // a queue of identifiers of READY processes
 void OperatingSystem_MoveToTheREADYState(int PID) {
@@ -373,7 +369,6 @@ void OperatingSystem_SaveContext(int PID) {
 	
 }
 
-
 // Exception management routine
 void OperatingSystem_HandleException() {
   
@@ -387,7 +382,6 @@ void OperatingSystem_HandleException() {
 	OperatingSystem_PrintStatus();
 }
 
-
 // All tasks regarding the removal of the process
 void OperatingSystem_TerminateProcess() {
 	
@@ -400,7 +394,7 @@ void OperatingSystem_TerminateProcess() {
 	
 	// One more process that has terminated
 	numberOfNotTerminatedUserProcesses--;
-	if (numberOfNotTerminatedUserProcesses<=0) {
+	if (numberOfNotTerminatedUserProcesses<=0 && OperatingSystem_IsThereANewProgram() == -1) {
 		// Simulation must finish 
 		OperatingSystem_ReadyToShutdown();
 	}
@@ -536,7 +530,13 @@ void OperatingSystem_HandleClockInterrupt(){
 			exit = 1;
 		}
 	}
-	if(numProcSacados != 0){
+	
+	int numCreados = OperatingSystem_LongTermScheduler();
+	if(numCreados > 0){
+		OperatingSystem_PrintStatus();
+	}	
+	
+	if(numProcSacados != 0 || numCreados > 0){
 		//mirar si el proceso que se encuentra ejecutndose tiene menos prioridad que el
 		//primero de la cola de listos
 		int candidato = OperatingSystem_ShortTermScheduler();
@@ -579,5 +579,4 @@ void OperatingSystem_BlockTheActualProcess(){
 //V3 ejercicio 1
 int OperatingSystem_GetExecutingProcessID(){
 	return executingProcessID;
-	
 }

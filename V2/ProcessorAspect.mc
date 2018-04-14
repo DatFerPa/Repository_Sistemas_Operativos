@@ -1279,6 +1279,8 @@ extern char *stpncpy (char *__restrict __dest,
 
 
 
+
+
 void Processor_FetchInstruction();
 void Processor_DecodeAndExecuteInstruction();
 void Processor_ManageInterrupts();
@@ -1509,6 +1511,9 @@ void Processor_DecodeAndExecuteInstruction() {
 
 
  ComputerSystem_DebugMessage(3, 'h',registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
+
+
+
 }
 
 
