@@ -539,32 +539,32 @@ extern void funlockfile( FILE *__stream) __attribute__  (( __nothrow__ , __leaf_
 # 913 "/usr/include/stdio.h" 3 4
 # 943 "/usr/include/stdio.h" 3 4
 # 6 "OperatingSystem.h" 2
-# 39 "OperatingSystem.h" 
+# 42 "OperatingSystem.h" 
 enum ProcessStates {NEW,READY,EXECUTING,BLOCKED,EXIT}; 
-#line 42 "OperatingSystem.h"
+#line 45 "OperatingSystem.h"
 enum SystemCallIdentifiers {SYSCALL_END=3,SYSCALL_YIELD=4,SYSCALL_PRINTEXECPID=5,SYSCALL_SLEEP=7}; 
-#line 57 "OperatingSystem.h"
+#line 60 "OperatingSystem.h"
 typedef struct {int busy; int initialPhysicalAddress; int processSize; int state; int priority; int copyOfPCRegister; unsigned int copyOfPSWRegister; int copyOfAcumulator; int programListIndex; int queueID; int whenToWakeUp; 
 }PCB; 
-#line 61 "OperatingSystem.h"
+#line 64 "OperatingSystem.h"
 extern  PCB processTable[4]; 
-#line 62 "OperatingSystem.h"
+#line 65 "OperatingSystem.h"
 extern int OS_address_base; 
-#line 63 "OperatingSystem.h"
-extern int sipID; 
 #line 66 "OperatingSystem.h"
-void OperatingSystem_Initialize(); 
-#line 67 "OperatingSystem.h"
-void OperatingSystem_InterruptLogic(int ); 
-#line 68 "OperatingSystem.h"
-void OperatingSystem_PrintReadyToRunQueue(); 
+extern int sipID; 
 #line 69 "OperatingSystem.h"
-void OperatingSystem_HandleClockInterrupt(); 
+void OperatingSystem_Initialize(); 
 #line 70 "OperatingSystem.h"
-void OperatingSystem_SendToBlockedState(int ); 
+void OperatingSystem_InterruptLogic(int ); 
 #line 71 "OperatingSystem.h"
-void OperatingSystem_BlockTheActualProcess(); 
+void OperatingSystem_PrintReadyToRunQueue(); 
 #line 72 "OperatingSystem.h"
+void OperatingSystem_HandleClockInterrupt(); 
+#line 73 "OperatingSystem.h"
+void OperatingSystem_SendToBlockedState(int ); 
+#line 74 "OperatingSystem.h"
+void OperatingSystem_BlockTheActualProcess(); 
+#line 75 "OperatingSystem.h"
 int OperatingSystem_GetExecutingProcessID(); 
 #line 9 "OperatingSystemBase.h"
 int OperatingSystem_ObtainAnEntryInTheProcessTable(); 
@@ -586,12 +586,21 @@ void OperatingSystem_PrintReadyToRunQueue();
 void OperatingSystem_PrepareTeachersDaemons(); 
 #line 18 "OperatingSystemBase.h"
 int OperatingSystem_IsThereANewProgram(); 
+#line 19 "OperatingSystemBase.h"
+int OperatingSystem_InitializePartitionTable(); 
 #line 20 "OperatingSystemBase.h"
-extern int sleepingProcessesQueue[4]; 
-#line 21 "OperatingSystemBase.h"
-extern int numberOfSleepingProcesses; 
+void OperatingSystem_ShowPartitionTable(char *); 
 #line 23 "OperatingSystemBase.h"
+extern int sleepingProcessesQueue[4]; 
+#line 24 "OperatingSystemBase.h"
+extern int numberOfSleepingProcesses; 
+#line 26 "OperatingSystemBase.h"
 extern int baseDaemonsInProgramList; 
+#line 34 "OperatingSystemBase.h"
+typedef struct {int occupied; int initAddress; int size; int PID; 
+}PARTITIONDATA; 
+#line 37 "OperatingSystemBase.h"
+extern  PARTITIONDATA partitionsTable[4 * 2]; 
 # 6 "OperatingSystemBase.h" 2
 # 6 "MyAspect.c" 2
  inline void __utac_acc__Aspect__1(void) { 

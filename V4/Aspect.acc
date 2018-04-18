@@ -909,7 +909,7 @@ extern void funlockfile (FILE *__stream) __attribute__ ((__nothrow__ , __leaf__)
 # 943 "/usr/include/stdio.h" 3 4
 
 # 6 "OperatingSystem.h" 2
-# 39 "OperatingSystem.h"
+# 42 "OperatingSystem.h"
 enum ProcessStates { NEW, READY, EXECUTING, BLOCKED, EXIT};
 
 
@@ -958,11 +958,25 @@ void OperatingSystem_PrintStatus();
 void OperatingSystem_PrintReadyToRunQueue();
 void OperatingSystem_PrepareTeachersDaemons();
 int OperatingSystem_IsThereANewProgram();
+int OperatingSystem_InitializePartitionTable();
+void OperatingSystem_ShowPartitionTable(char *);
+
 
 extern int sleepingProcessesQueue[4];
 extern int numberOfSleepingProcesses;
 
 extern int baseDaemonsInProgramList;
+
+
+typedef struct {
+     int occupied;
+     int initAddress;
+     int size;
+     int PID;
+} PARTITIONDATA;
+
+
+extern PARTITIONDATA partitionsTable[4*2];
 # 4 "MyAspect.c" 2
 
 

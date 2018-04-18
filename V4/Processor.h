@@ -59,4 +59,7 @@ enum EXCEPTIONS {DIVISIONBYZERO, INVALIDPROCESSORMODE, INVALIDADDRESS, INVALIDIN
 void Processor_ShowTime(char section);
 
 int Processor_GetRegisterB();
+
+
+void Processor_RaiseException(int typeOfException);
 #endif
