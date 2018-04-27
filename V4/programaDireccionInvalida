@@ -1,0 +1,8 @@
+
+30
+5
+NOP
+READ -1
+NOP
+NOP
+TRAP 3

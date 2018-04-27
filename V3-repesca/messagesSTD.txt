@@ -24,10 +24,3 @@
 121,Process [@G%d@@] is thrown out of the processor by process [@G%d@@]\n
 
 130, (PID: @G%d@@, PC: @R%d@@, Accumulator: @R%d@@, PSW: @R%d@@ [@R%s@@])\n
-
-140, Process [@R%d@@]->[@R%s@@] has caused an exception (@R%s@@) and is being terminated\n
-
-142,Process [@G%d@@]->[@G%s@@] requests [@G%d@@] memory positions\n
-143,Partition [@G%d@@: @G%d@@-> @G%d@@] has been assigned to process [@G%d@@]->[@G%s@@]\n
-144,@RError: A process could not be created from program [%s] because an appropriate partition is not available@@\n
-

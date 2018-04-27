@@ -3060,6 +3060,7 @@ void OperatingSystem_TerminateProcess() {
 
   OperatingSystem_ReadyToShutdown();
  }
+ processTable[executingProcessID].busy = 0;
 
  selectedProcess=OperatingSystem_ShortTermScheduler();
 
@@ -3194,7 +3195,9 @@ void OperatingSystem_HandleClockInterrupt(){
  }
 
  int numCreados = OperatingSystem_LongTermScheduler();
- if(numCreados > 0){
+ if(numCreados <= 1 && OperatingSystem_IsThereANewProgram() == -1){
+  OperatingSystem_ReadyToShutdown();
+ }else{
   OperatingSystem_PrintStatus();
  }
 

@@ -501,6 +501,8 @@ void OperatingSystem_TerminateProcess() {
 		// Simulation must finish 
 		OperatingSystem_ReadyToShutdown();
 	}
+	
+	processTable[executingProcessID].busy = 0;
 	// Select the next process to execute (sipID if no more user processes)
 	selectedProcess=OperatingSystem_ShortTermScheduler();
 	// Assign the processor to that process
@@ -642,7 +644,9 @@ void OperatingSystem_HandleClockInterrupt(){
 	}
 	
 	int numCreados = OperatingSystem_LongTermScheduler();
-	if(numCreados > 0){
+	if(numCreados <= 1 && OperatingSystem_IsThereANewProgram() == -1){		
+		OperatingSystem_ReadyToShutdown();
+	}else{
 		OperatingSystem_PrintStatus();
 	}	
 	

@@ -1,0 +1,8 @@
+//Se prueba que no se puede ejecutar una instruccion que no exista
+30
+5
+NOP
+FJFJFJFFJ
+NOP
+NOP
+TRAP 3
