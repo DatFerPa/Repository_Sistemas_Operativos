@@ -53,13 +53,11 @@ unsigned int Processor_GetPSW();
 //raise interrupt
 void Processor_RaiseInterrupt(const unsigned int);
 
+void Processor_ShowTime(char section);
+
 //V4 ejercicio 1-b
 enum EXCEPTIONS {DIVISIONBYZERO, INVALIDPROCESSORMODE, INVALIDADDRESS, INVALIDINSTRUCTION};
 
-void Processor_ShowTime(char section);
-
 int Processor_GetRegisterB();
-
-
 void Processor_RaiseException(int typeOfException);
 #endif

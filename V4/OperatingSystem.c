@@ -25,8 +25,7 @@ int OperatingSystem_ShortTermScheduler();
 int OperatingSystem_ExtractFromReadyToRun(int queue);
 void OperatingSystem_HandleException();
 void OperatingSystem_HandleSystemCall();
-//metodo para mirar el tamaño de la particion mas grande disponible
-int mainMemoryPartitionSizeAvailable();
+
 // The process table
 PCB processTable[PROCESSTABLEMAXSIZE];
 
@@ -50,8 +49,6 @@ int baseDaemonsInProgramList;
 // Variable containing the number of not terminated user processes
 int numberOfNotTerminatedUserProcesses=0;
 
-
-
 //Ejercicio 10 V1
 char * statesNames [5]={"NEW","READY","EXECUTING","BLOCKED","EXIT"};
 
@@ -66,11 +63,6 @@ int numberOfClockInterrupts = 0;
 // Heap with blocked porcesses sort by when to wakeup
 int sleepingProcessesQueue[PROCESSTABLEMAXSIZE];
 int numberOfSleepingProcesses=0;
-
-
-//Variable donde guardamos el numero de particiones realizadas
-int numberOfMemoryPartitions=0;
-int numberOfFreePartitions=0;
 
 
 // Initial set of tasks of the OS
@@ -92,11 +84,6 @@ void OperatingSystem_Initialize(int daemonsIndex) {
 	// Initialization of the interrupt vector table of the processor
 	Processor_InitializeInterruptVectorTable(OS_address_base+1);
 	
-	//V4 ejercicio 5
-	//añadimos esta asignacion a la variable para guardar el numero de particiones realizadas
-	numberOfMemoryPartitions = OperatingSystem_InitializePartitionTable();
-	numberOfFreePartitions = numberOfMemoryPartitions;
-	
 	// Create all system daemon processes
 	
 	OperatingSystem_PrepareDaemons(daemonsIndex);
@@ -105,8 +92,6 @@ void OperatingSystem_Initialize(int daemonsIndex) {
 	ComputerSystem_FillInArrivalTimeQueue();
 	//V3 ejercicio 0-d
 	OperatingSystem_PrintStatus();
-	
-	
 	// Create all user processes from the information given in the command line
 	procesosCreados = OperatingSystem_LongTermScheduler();
 	if(procesosCreados <= 1 && OperatingSystem_IsThereANewProgram() == -1){		
@@ -183,10 +168,6 @@ int OperatingSystem_LongTermScheduler() {
 				OperatingSystem_ShowTime(ERROR);
 				ComputerSystem_DebugMessage(105,ERROR,progamaFallido->executableName);
 			}
-			if(PID == MEMORYFULL){
-				OperatingSystem_ShowTime(ERROR);
-				ComputerSystem_DebugMessage(144,ERROR,progamaFallido->executableName);
-			}
 		}else{
 			numberOfSuccessfullyCreatedProcesses++;
 			if (programList[pidAux]->type==USERPROGRAM)
@@ -233,36 +214,16 @@ int OperatingSystem_CreateProcess(int indexOfExecutableProgram) {
 		return PROGRAMNOTVALID;
 	}
 	// Obtain enough memory space
-	
-	OperatingSystem_ShowTime(SYSMEM);
-	ComputerSystem_DebugMessage(142,SYSMEM,PID,executableProgram->executableName,processSize);
-	
  	loadingPhysicalAddress=OperatingSystem_ObtainMainMemory(processSize, PID);
 	if(loadingPhysicalAddress == TOOBIGPROCESS){
 		return TOOBIGPROCESS;
 	}
-	
-	if(loadingPhysicalAddress == MEMORYFULL){
-		return MEMORYFULL;
-	}
 	int exitoTam = SUCCESS;
 	// Load program in the allocated memory
-	exitoTam =  OperatingSystem_LoadProgram(programFile, partitionsTable[loadingPhysicalAddress].initAddress, processSize);
+	exitoTam =  OperatingSystem_LoadProgram(programFile, loadingPhysicalAddress, processSize);
 	if(exitoTam != SUCCESS){
 		return TOOBIGPROCESS;
-	}
-	
-	///Cosas para asignar memoria
-	//carga de programa correcta
-	//vamos a asignar la memoria al proceso/programa
-	OperatingSystem_ShowTime(SYSMEM);
-	ComputerSystem_DebugMessage(143,SYSMEM,loadingPhysicalAddress,partitionsTable[loadingPhysicalAddress].initAddress,partitionsTable[loadingPhysicalAddress].size,PID,executableProgram->executableName);
-	numberOfFreePartitions--;//vamos a tener un particion menos disponible
-	partitionsTable[loadingPhysicalAddress].PID = PID;
-	partitionsTable[loadingPhysicalAddress].occupied = 1;
-	
-	
-	
+	}	
 	// PCB initialization
 	OperatingSystem_PCBInitialization(PID, loadingPhysicalAddress, processSize, priority, indexOfExecutableProgram);
 	// Sohw message "New Process [] moving to the [NEW] state"
@@ -276,68 +237,16 @@ int OperatingSystem_CreateProcess(int indexOfExecutableProgram) {
 	return PID;
 }
 
-int mainMemoryPartitionSizeAvailable(){
-	int i;
-	int maxSize = 0;
-	for(i = 0; i < numberOfMemoryPartitions; i++){
-		if(partitionsTable[i].size > maxSize && partitionsTable[i].occupied == 0){
-			maxSize = partitionsTable[i].size;
-		}
-	}
-	return maxSize;
-}
-
 
 // Main memory is assigned in chunks. All chunks are the same size. A process
 // always obtains the chunk whose position in memory is equal to the processor identifier
 int OperatingSystem_ObtainMainMemory(int processSize, int PID) {
-	
-	//definimos el indice de la particion adecuada
-	int PartitionIndex = MEMORYFULL;
-	//mejor ajuste
-	int mejorAjuste;
-	
-	//añadimos flag de control para que el caso primero sea siempre valido	
-	int flag =0;
-	/*
-	if (processSize>MAINMEMORYSECTIONSIZE)
+
+ 	if (processSize>MAINMEMORYSECTIONSIZE)
 		return TOOBIGPROCESS;
-	*/
 	
-	if(processSize > mainMemoryPartitionSizeAvailable()){
-		return TOOBIGPROCESS;		
-	}
-	
-	
-	if(numberOfFreePartitions == 0){
-		return MEMORYFULL;
-	}
-	int i;
-	for(i = 0; i< numberOfMemoryPartitions;i++){
-		//primero vamos a mirar que el tamaño del proceso sea menor o igual que el de la particion
-		if(processSize <= partitionsTable[i].size && partitionsTable[i].occupied == 0){
-			//Sacamos la diferencia para el ajuste (tiene que ser positiva o 0)
-			int ajuste = partitionsTable[i].size - processSize;
-			//Porblema aqui porque vamos a empezar con 0
-			if(ajuste < mejorAjuste || flag == 0){
-				mejorAjuste = ajuste;
-				PartitionIndex = i;
-				flag = 1;
-			}
-			if(ajuste == mejorAjuste){
-				if(partitionsTable[i].initAddress < partitionsTable[PartitionIndex].initAddress){
-					//En caso de que tengan el mismo ajuste, seleccionamos la que tiene una direccion inicial menor
-					PartitionIndex = i;
-				}
-				
-			}
-			
-		}
-	}
- 	return PartitionIndex;
+ 	return PID*MAINMEMORYSECTIONSIZE;
 }
-
-
 
 
 // Assign initial values to all fields inside the PCB
@@ -445,6 +354,7 @@ void OperatingSystem_PreemptRunningProcess() {
 	executingProcessID=NOPROCESS;
 }
 
+
 // Save in the process' PCB essential values stored in hardware registers and the system stack
 void OperatingSystem_SaveContext(int PID) {
 	
@@ -463,9 +373,9 @@ void OperatingSystem_SaveContext(int PID) {
 void OperatingSystem_HandleException() {
   
 	// Show message "Process [executingProcessID] has generated an exception and is terminating\n"
-	OperatingSystem_ShowTime(INTERRUPT);
+	OperatingSystem_ShowTime(SYSPROC);
 	//ComputerSystem_DebugMessage(23,SYSPROC,executingProcessID);
-	PROGRAMS_DATA *executableProgram=programList[executingProcessID];
+	PROGRAMS_DATA *executableProgram=programList[processTable[executingProcessID].programListIndex];
 	//registerB_CPU
 	
 	switch (Processor_GetRegisterB()){
@@ -501,13 +411,13 @@ void OperatingSystem_TerminateProcess() {
 		// Simulation must finish 
 		OperatingSystem_ReadyToShutdown();
 	}
-	
 	processTable[executingProcessID].busy = 0;
 	// Select the next process to execute (sipID if no more user processes)
 	selectedProcess=OperatingSystem_ShortTermScheduler();
 	// Assign the processor to that process
 	OperatingSystem_Dispatch(selectedProcess);
 }
+
 
 // System call management routine
 void OperatingSystem_HandleSystemCall() {
@@ -556,17 +466,9 @@ void OperatingSystem_HandleSystemCall() {
 			OperatingSystem_Dispatch(executingProcessID);
 			OperatingSystem_PrintStatus();
 			break;
-			
-		default:
-			OperatingSystem_ShowTime(INTERRUPT);
-			PROGRAMS_DATA *executableProgram=programList[executingProcessID];
-			ComputerSystem_DebugMessage(140,INTERRUPT,executingProcessID,executableProgram->executableName,systemCallID);
-			OperatingSystem_TerminateProcess();
-			OperatingSystem_PrintStatus();
-			break;
 	}
 }
-
+	
 //	Implement interrupt logic calling appropriate interrupt handle
 void OperatingSystem_InterruptLogic(int entryPoint){
 	switch (entryPoint){
@@ -648,7 +550,7 @@ void OperatingSystem_HandleClockInterrupt(){
 		OperatingSystem_ReadyToShutdown();
 	}else{
 		OperatingSystem_PrintStatus();
-	}	
+	}
 	
 	if(numProcSacados != 0 || numCreados > 0){
 		//mirar si el proceso que se encuentra ejecutndose tiene menos prioridad que el

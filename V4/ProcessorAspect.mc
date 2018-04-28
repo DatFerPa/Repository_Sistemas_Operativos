@@ -76,14 +76,12 @@ unsigned int Processor_GetPSW();
 
 void Processor_RaiseInterrupt(const unsigned int);
 
+void Processor_ShowTime(char section);
+
 
 enum EXCEPTIONS {DIVISIONBYZERO, INVALIDPROCESSORMODE, INVALIDADDRESS, INVALIDINSTRUCTION};
 
-void Processor_ShowTime(char section);
-
 int Processor_GetRegisterB();
-
-
 void Processor_RaiseException(int typeOfException);
 # 2 "Processor.c" 2
 # 1 "OperatingSystem.h" 1
@@ -961,7 +959,7 @@ extern void funlockfile (FILE *__stream) __attribute__ ((__nothrow__ , __leaf__)
 # 943 "/usr/include/stdio.h" 3 4
 
 # 6 "OperatingSystem.h" 2
-# 42 "OperatingSystem.h"
+# 39 "OperatingSystem.h"
 enum ProcessStates { NEW, READY, EXECUTING, BLOCKED, EXIT};
 
 
@@ -1319,6 +1317,7 @@ MEMORYCELL registerMBR_CPU;
 
 int registerA_CPU;
 
+int registerB_CPU;
 int interruptLines_CPU;
 
 
@@ -1326,9 +1325,6 @@ int interruptVectorTable[10];
 
 
 char pswmask []="----------------";
-
-
-int registerB_CPU;
 
 
 void Processor_InitializeInterruptVectorTable(int interruptVectorInitialAddress) {
@@ -1420,6 +1416,7 @@ void Processor_DecodeAndExecuteInstruction() {
    registerPC_CPU++;
    break;
 
+
   case 'n':
    registerPC_CPU++;
    break;
@@ -1497,8 +1494,7 @@ void Processor_DecodeAndExecuteInstruction() {
    if(Processor_PSW_BitState(EXECUTION_MODE_BIT)){
 
 
-
-    ComputerSystem_DebugMessage(130,'h',OperatingSystem_GetExecutingProcessID(),registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
+    ComputerSystem_DebugMessage(3, 'h',registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
 
     OperatingSystem_InterruptLogic(registerIR_CPU.operand1);
     registerPC_CPU++;
@@ -1520,9 +1516,10 @@ void Processor_DecodeAndExecuteInstruction() {
    }
    break;
 
+
   default :
    Processor_RaiseException(INVALIDINSTRUCTION);
-   registerPC_CPU++;
+
    break;
  }
 
@@ -1535,6 +1532,11 @@ void Processor_DecodeAndExecuteInstruction() {
  ComputerSystem_DebugMessage(130,'h',OperatingSystem_GetExecutingProcessID(),registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
 }
 
+
+void Processor_RaiseException(int typeOfException) {
+Processor_RaiseInterrupt(EXCEPTION_BIT);
+registerB_CPU=typeOfException;
+}
 
 
 void Processor_ManageInterrupts() {
@@ -1581,6 +1583,10 @@ void Processor_UpdatePSW(){
    Processor_DeactivatePSW_Bit(NEGATIVE_BIT);
  }
 
+}
+
+int Processor_GetRegisterB(){
+ return registerB_CPU;
 }
 
 
@@ -1752,14 +1758,4 @@ char * Processor_ShowPSW(){
 void Processor_ShowTime(char section){
  ComputerSystem_DebugMessage(Processor_PSW_BitState(EXECUTION_MODE_BIT)?5:4,section,Clock_GetTime());
 
-}
-
-
-void Processor_RaiseException(int typeOfException) {
- Processor_RaiseInterrupt(EXCEPTION_BIT);
- registerB_CPU=typeOfException;
-}
-
-int Processor_GetRegisterB(){
- return registerB_CPU;
 }

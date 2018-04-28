@@ -24,9 +24,6 @@
 
 #define NOFREEENTRY -3
 #define TOOBIGPROCESS -4
-//V4 ejercicio 6-d-ii
-#define MEMORYFULL -5
-
 
 #define NOPROCESS -1
 
@@ -73,9 +70,5 @@ void OperatingSystem_HandleClockInterrupt();
 void OperatingSystem_SendToBlockedState(int);
 void OperatingSystem_BlockTheActualProcess();
 int OperatingSystem_GetExecutingProcessID();
-
-//V4 ejercicio 5
-// Partitions configuration file name definition
-#define MEMCONFIG "MemConfig" // in OperatingSystem.h 
 
 #endif

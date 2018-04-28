@@ -31,7 +31,8 @@ int registerMAR_CPU; // Memory Address Register
 MEMORYCELL registerMBR_CPU; // Memory Buffer Register
 
 int registerA_CPU; // General purpose register
-
+//V4 ejercicio1-a
+int registerB_CPU;
 int interruptLines_CPU; // Processor interrupt lines
 
 // interrupt vector table: an array of handle interrupt memory addresses routines  
@@ -39,9 +40,6 @@ int interruptVectorTable[INTERRUPTTYPES];
 
 // For PSW show "--------X---FNZS"
 char pswmask []="----------------"; 
-
-//V4 ejercicio 1-a
-int registerB_CPU; //General purpose register
 
 // Initialization of the interrupt vector table
 void Processor_InitializeInterruptVectorTable(int interruptVectorInitialAddress) {
@@ -118,7 +116,7 @@ void Processor_DecodeAndExecuteInstruction() {
 		// Instruction DIV
 		case 'd':
 			if (registerIR_CPU.operand2 == 0)
-				//Processor_RaiseInterrupt(EXCEPTION_BIT); 
+				//Processor_RaiseInterrupt(EXCEPTION_BIT);
 				Processor_RaiseException(DIVISIONBYZERO);
 			else {
 				registerAccumulator_CPU=registerIR_CPU.operand1 / registerIR_CPU.operand2;
@@ -132,6 +130,7 @@ void Processor_DecodeAndExecuteInstruction() {
 			registerA_CPU=registerIR_CPU.operand1;
 			registerPC_CPU++;
 			break;
+		
 		// Instruction NOP
 		case 'n':
 			registerPC_CPU++;
@@ -210,8 +209,7 @@ void Processor_DecodeAndExecuteInstruction() {
 			if(Processor_PSW_BitState(EXECUTION_MODE_BIT)){
 				// Show final part of HARDWARE message with CPU registers
 				// Show message: " (PC: registerPC_CPU, Accumulator: registerAccumulator_CPU, PSW: registerPSW_CPU [Processor_ShowPSW()]\n
-				//ComputerSystem_DebugMessage(3, HARDWARE,registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
-				ComputerSystem_DebugMessage(130,HARDWARE,OperatingSystem_GetExecutingProcessID(),registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
+				ComputerSystem_DebugMessage(3, HARDWARE,registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
 				// Not all operating system code is executed in simulated processor, but really must do it... 
 				OperatingSystem_InterruptLogic(registerIR_CPU.operand1);
 				registerPC_CPU++;
@@ -231,11 +229,12 @@ void Processor_DecodeAndExecuteInstruction() {
 				//Processor_RaiseInterrupt(EXCEPTION_BIT);
 				Processor_RaiseException(INVALIDPROCESSORMODE);
 			}	
-			break;
+			break;		
+
 		// Unknown instruction
-		default :
+		default : 
 			Processor_RaiseException(INVALIDINSTRUCTION);
-			registerPC_CPU++;
+			//registerPC_CPU++;
 			break;
 	}
 	
@@ -248,10 +247,15 @@ void Processor_DecodeAndExecuteInstruction() {
 	ComputerSystem_DebugMessage(130,HARDWARE,OperatingSystem_GetExecutingProcessID(),registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
 }
 
+// Function to raise an exception. Exercise 1-c of V4
+void Processor_RaiseException(int typeOfException) {
+Processor_RaiseInterrupt(EXCEPTION_BIT);
+registerB_CPU=typeOfException;
+}
 
 // Hardware interrupt processing
 void Processor_ManageInterrupts() {
-
+  
 	int i;
 
 		for (i=0;i<INTERRUPTTYPES;i++)
@@ -261,7 +265,7 @@ void Processor_ManageInterrupts() {
 				Processor_ACKInterrupt(i);
 				// Copy PC and PSW registers in the system stack
 				Processor_CopyInSystemStack(MAINMEMORYSIZE-1, registerPC_CPU);
-				Processor_CopyInSystemStack(MAINMEMORYSIZE-2, registerPSW_CPU);
+				Processor_CopyInSystemStack(MAINMEMORYSIZE-2, registerPSW_CPU);	
 				//activar enmascaramineto de interrupciones
 				Processor_ActivatePSW_Bit(INTERRUPT_MASKED_BIT);
 				// Activate protected excution mode
@@ -283,7 +287,7 @@ void Processor_UpdatePSW(){
 		if (Processor_PSW_BitState(ZERO_BIT))
 			Processor_DeactivatePSW_Bit(ZERO_BIT);
 	}
-
+	
 	// Update NEGATIVE_BIT
 	if (registerAccumulator_CPU<0) {
 		if (!Processor_PSW_BitState(NEGATIVE_BIT))
@@ -294,6 +298,10 @@ void Processor_UpdatePSW(){
 			Processor_DeactivatePSW_Bit(NEGATIVE_BIT);
 	}
 	
+}
+
+int Processor_GetRegisterB(){
+	return registerB_CPU;
 }
 
 // Check overflow, receive operands for add (if sub, change operand2 sign)
@@ -466,13 +474,3 @@ void Processor_ShowTime(char section){
 	ComputerSystem_DebugMessage(Processor_PSW_BitState(EXECUTION_MODE_BIT)?5:4,section,Clock_GetTime());
 
 }	
-
-// Function to raise an exception. Exercise 1-c of V4
-void Processor_RaiseException(int typeOfException) {
- Processor_RaiseInterrupt(EXCEPTION_BIT);
- registerB_CPU=typeOfException;
-}
-
-int Processor_GetRegisterB(){
-	return registerB_CPU;
-}
