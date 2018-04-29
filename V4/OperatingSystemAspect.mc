@@ -879,7 +879,7 @@ extern void funlockfile (FILE *__stream) __attribute__ ((__nothrow__ , __leaf__)
 # 943 "/usr/include/stdio.h" 3 4
 
 # 6 "OperatingSystem.h" 2
-# 39 "OperatingSystem.h"
+# 45 "OperatingSystem.h"
 enum ProcessStates { NEW, READY, EXECUTING, BLOCKED, EXIT};
 
 
@@ -914,6 +914,9 @@ void OperatingSystem_HandleClockInterrupt();
 void OperatingSystem_SendToBlockedState(int);
 void OperatingSystem_BlockTheActualProcess();
 int OperatingSystem_GetExecutingProcessID();
+int OperatingSystem_ObtainMainMemory(int, int);
+void OperatingSystem_ReleaseMainMemory();
+int OperatingSystem_mainMemoryPartitionSizeAvailable();
 # 2 "OperatingSystem.c" 2
 # 1 "OperatingSystemBase.h" 1
 # 9 "OperatingSystemBase.h"
@@ -935,6 +938,17 @@ extern int sleepingProcessesQueue[4];
 extern int numberOfSleepingProcesses;
 
 extern int baseDaemonsInProgramList;
+
+
+typedef struct {
+     int occupied;
+     int initAddress;
+     int size;
+     int PID;
+} PARTITIONDATA;
+
+
+extern PARTITIONDATA partitionsTable[4*2];
 # 3 "OperatingSystem.c" 2
 # 1 "MMU.h" 1
 
@@ -2736,6 +2750,10 @@ int sleepingProcessesQueue[4];
 int numberOfSleepingProcesses=0;
 
 
+int numberOfMemoryPartitions = 0;
+int numberOfFreePartitions = 0;
+
+
 
 void OperatingSystem_Initialize(int daemonsIndex) {
 
@@ -2755,6 +2773,8 @@ void OperatingSystem_Initialize(int daemonsIndex) {
 
  Processor_InitializeInterruptVectorTable(OS_address_base+1);
 
+ numberOfMemoryPartitions = OperatingSystem_InitializePartitionTable();
+ numberOfFreePartitions = numberOfMemoryPartitions;
 
 
  OperatingSystem_PrepareDaemons(daemonsIndex);
@@ -2839,6 +2859,10 @@ int OperatingSystem_LongTermScheduler() {
     OperatingSystem_ShowTime('e');
     ComputerSystem_DebugMessage(105,'e',progamaFallido->executableName);
    }
+   if(PID == -5){
+    OperatingSystem_ShowTime('e');
+    ComputerSystem_DebugMessage(144,'e',progamaFallido->executableName);
+   }
   }else{
    numberOfSuccessfullyCreatedProcesses++;
    if (programList[pidAux]->type==(unsigned int) 0)
@@ -2884,17 +2908,34 @@ int OperatingSystem_CreateProcess(int indexOfExecutableProgram) {
  if(priority == -2){
   return -2;
  }
+ OperatingSystem_ShowTime('m');
+ ComputerSystem_DebugMessage(142,'m',PID,executableProgram->executableName,processSize);
+
 
   loadingPhysicalAddress=OperatingSystem_ObtainMainMemory(processSize, PID);
  if(loadingPhysicalAddress == -4){
   return -4;
  }
+ if(loadingPhysicalAddress == -5){
+  return -5;
+ }
+
  int exitoTam = 1;
 
- exitoTam = OperatingSystem_LoadProgram(programFile, loadingPhysicalAddress, processSize);
+ exitoTam = OperatingSystem_LoadProgram(programFile, partitionsTable[loadingPhysicalAddress].initAddress, processSize);
  if(exitoTam != 1){
   return -4;
  }
+
+ OperatingSystem_ShowPartitionTable("before allocating memory");
+ OperatingSystem_ShowTime('m');
+ ComputerSystem_DebugMessage(143,'m',loadingPhysicalAddress,partitionsTable[loadingPhysicalAddress].initAddress,partitionsTable[loadingPhysicalAddress].size,PID,executableProgram->executableName);
+ numberOfFreePartitions--;
+ partitionsTable[loadingPhysicalAddress].PID = PID;
+ partitionsTable[loadingPhysicalAddress].occupied = 1;
+ OperatingSystem_ShowPartitionTable("after allocating memory");
+
+
 
  OperatingSystem_PCBInitialization(PID, loadingPhysicalAddress, processSize, priority, indexOfExecutableProgram);
 
@@ -2911,15 +2952,74 @@ int OperatingSystem_CreateProcess(int indexOfExecutableProgram) {
 
 
 
-int OperatingSystem_ObtainMainMemory(int processSize, int PID) {
+int OperatingSystem_ObtainMainMemory(int processSize, int PID){
 
-  if (processSize>(300 / (4 +1)))
+
+ int partitionIndex = -5;
+
+ int mejorAjuste;
+
+
+ int flag =0;
+  if (processSize>OperatingSystem_mainMemoryPartitionSizeAvailable())
   return -4;
 
-  return PID*(300 / (4 +1));
+ if(numberOfFreePartitions == 0){
+  return -5;
+ }
+
+ int i;
+ for(i = 0; i< numberOfMemoryPartitions;i++){
+
+  if(processSize <= partitionsTable[i].size && partitionsTable[i].occupied == 0){
+
+   int ajuste = partitionsTable[i].size - processSize;
+
+   if(ajuste < mejorAjuste || flag == 0){
+    mejorAjuste = ajuste;
+    partitionIndex = i;
+    flag = 1;
+   }
+   if(ajuste == mejorAjuste){
+    if(partitionsTable[i].initAddress < partitionsTable[partitionIndex].initAddress){
+
+     partitionIndex = i;
+    }
+
+   }
+
+  }
+ }
+  return partitionIndex;
+
 }
 
+int OperatingSystem_mainMemoryPartitionSizeAvailable(){
+int i;
+ int maxSize = 0;
+ for(i = 0; i < numberOfMemoryPartitions; i++){
+  if(partitionsTable[i].size > maxSize && partitionsTable[i].occupied == 0){
+   maxSize = partitionsTable[i].size;
+  }
+ }
+ return maxSize;
+}
 
+void OperatingSystem_ReleaseMainMemory(){
+ int i;
+ PROGRAMS_DATA *executableProgram=programList[processTable[executingProcessID].programListIndex];
+ for(i = 0; i< numberOfMemoryPartitions;i++){
+  if(partitionsTable[i].PID == executingProcessID && partitionsTable[i].occupied !=0){
+   OperatingSystem_ShowPartitionTable("before releasing memory");
+   partitionsTable[i].occupied=0;
+   numberOfFreePartitions++;
+   OperatingSystem_ShowTime('m');
+   ComputerSystem_DebugMessage(145,'m',i,partitionsTable[i].initAddress,partitionsTable[i].size,executingProcessID,executableProgram->executableName);
+   OperatingSystem_ShowPartitionTable("after releasing memory");
+  }
+ }
+
+}
 
 void OperatingSystem_PCBInitialization(int PID, int initialPhysicalAddress, int processSize, int priority, int processPLIndex) {
 
@@ -3044,7 +3144,7 @@ void OperatingSystem_SaveContext(int PID) {
 void OperatingSystem_HandleException() {
 
 
- OperatingSystem_ShowTime('p');
+ OperatingSystem_ShowTime('i');
 
  PROGRAMS_DATA *executableProgram=programList[processTable[executingProcessID].programListIndex];
 
@@ -3052,12 +3152,16 @@ void OperatingSystem_HandleException() {
  switch (Processor_GetRegisterB()){
   case DIVISIONBYZERO:
    ComputerSystem_DebugMessage(140,'i',executingProcessID,executableProgram->executableName,"division by zero");
+   break;
   case INVALIDPROCESSORMODE:
    ComputerSystem_DebugMessage(140,'i',executingProcessID,executableProgram->executableName,"invalid processor mode");
+   break;
   case INVALIDADDRESS:
    ComputerSystem_DebugMessage(140,'i',executingProcessID,executableProgram->executableName,"invalid address");
+   break;
   case INVALIDINSTRUCTION:
    ComputerSystem_DebugMessage(140,'i',executingProcessID,executableProgram->executableName,"invalid instruction");
+   break;
  }
 
  OperatingSystem_TerminateProcess();
@@ -3075,6 +3179,9 @@ void OperatingSystem_TerminateProcess() {
  ComputerSystem_DebugMessage(110,'p',executingProcessID,statesNames[processTable[executingProcessID].state],statesNames[4]);
 
  processTable[executingProcessID].state=EXIT;
+ processTable[executingProcessID].busy = 0;
+
+ OperatingSystem_ReleaseMainMemory();
 
 
  numberOfNotTerminatedUserProcesses--;
@@ -3082,7 +3189,7 @@ void OperatingSystem_TerminateProcess() {
 
   OperatingSystem_ReadyToShutdown();
  }
- processTable[executingProcessID].busy = 0;
+
 
  selectedProcess=OperatingSystem_ShortTermScheduler();
 
@@ -3121,11 +3228,6 @@ void OperatingSystem_HandleSystemCall() {
    if(processTable[idProcesoCandidato].priority == processTable[executingProcessID].priority){
     OperatingSystem_ShowTime('s');
     ComputerSystem_DebugMessage(118,'s',idAntiguo,idProcesoCandidato);
-
-
-
-
-
     OperatingSystem_PreemptRunningProcess();
     OperatingSystem_Dispatch(OperatingSystem_ShortTermScheduler());
     OperatingSystem_PrintStatus();
@@ -3135,6 +3237,13 @@ void OperatingSystem_HandleSystemCall() {
    OperatingSystem_BlockTheActualProcess();
    executingProcessID= OperatingSystem_ShortTermScheduler();
    OperatingSystem_Dispatch(executingProcessID);
+   OperatingSystem_PrintStatus();
+   break;
+  default:
+   OperatingSystem_ShowTime('i');
+   PROGRAMS_DATA *executableProgram=programList[processTable[executingProcessID].programListIndex];
+   ComputerSystem_DebugMessage(141,'i',executingProcessID,executableProgram->executableName,systemCallID);
+   OperatingSystem_TerminateProcess();
    OperatingSystem_PrintStatus();
    break;
  }
@@ -3152,8 +3261,7 @@ void OperatingSystem_InterruptLogic(int entryPoint){
   case CLOCKINT_BIT:
    OperatingSystem_HandleClockInterrupt();
    break;
- }
-
+  }
 }
 
 

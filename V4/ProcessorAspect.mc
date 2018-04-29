@@ -959,7 +959,7 @@ extern void funlockfile (FILE *__stream) __attribute__ ((__nothrow__ , __leaf__)
 # 943 "/usr/include/stdio.h" 3 4
 
 # 6 "OperatingSystem.h" 2
-# 39 "OperatingSystem.h"
+# 45 "OperatingSystem.h"
 enum ProcessStates { NEW, READY, EXECUTING, BLOCKED, EXIT};
 
 
@@ -994,6 +994,9 @@ void OperatingSystem_HandleClockInterrupt();
 void OperatingSystem_SendToBlockedState(int);
 void OperatingSystem_BlockTheActualProcess();
 int OperatingSystem_GetExecutingProcessID();
+int OperatingSystem_ObtainMainMemory(int, int);
+void OperatingSystem_ReleaseMainMemory();
+int OperatingSystem_mainMemoryPartitionSizeAvailable();
 # 3 "Processor.c" 2
 # 1 "Buses.h" 1
 

@@ -35,6 +35,12 @@
 //Ejercicio V2 5-c
 #define SLEEPINGQUEUE
 
+//V4 ejercicio 5
+// Partitions configuration file name definition
+#define MEMCONFIG "MemConfig"
+
+//V4 ejercicio 6-d
+#define MEMORYFULL -5 // In OperatingSystem.h
 // Enumerated type containing all the possible process states
 enum ProcessStates { NEW, READY, EXECUTING, BLOCKED, EXIT};
 
@@ -70,5 +76,7 @@ void OperatingSystem_HandleClockInterrupt();
 void OperatingSystem_SendToBlockedState(int);
 void OperatingSystem_BlockTheActualProcess();
 int OperatingSystem_GetExecutingProcessID();
-
+int OperatingSystem_ObtainMainMemory(int, int);
+void OperatingSystem_ReleaseMainMemory();
+int OperatingSystem_mainMemoryPartitionSizeAvailable();
 #endif
