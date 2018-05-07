@@ -1485,7 +1485,8 @@ void Processor_DecodeAndExecuteInstruction() {
    if(Processor_PSW_BitState(EXECUTION_MODE_BIT)){
 
 
-    ComputerSystem_DebugMessage(3, 'h',registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
+
+    ComputerSystem_DebugMessage(130,'h',OperatingSystem_GetExecutingProcessID(),registerPC_CPU,registerAccumulator_CPU,registerPSW_CPU,Processor_ShowPSW());
 
     OperatingSystem_InterruptLogic(registerIR_CPU.operand1);
     registerPC_CPU++;

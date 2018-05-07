@@ -535,10 +535,7 @@ void OperatingSystem_HandleClockInterrupt(){
 	int numCreados = OperatingSystem_LongTermScheduler();
 	if(numCreados <= 1 && OperatingSystem_IsThereANewProgram() == -1){		
 		OperatingSystem_ReadyToShutdown();
-	}else{
-		OperatingSystem_PrintStatus();
 	}
-	
 	if(numProcSacados != 0 || numCreados > 0){
 		//mirar si el proceso que se encuentra ejecutndose tiene menos prioridad que el
 		//primero de la cola de listos
