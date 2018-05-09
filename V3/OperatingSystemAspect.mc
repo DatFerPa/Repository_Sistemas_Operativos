@@ -3182,7 +3182,7 @@ void OperatingSystem_HandleClockInterrupt(){
  while(exit==0){
 
   int idQueue = Heap_getFirst(sleepingProcessesQueue,numberOfSleepingProcesses);
-  if(processTable[idQueue].whenToWakeUp <= numberOfClockInterrupts && idQueue != -1){
+  if((processTable[idQueue].whenToWakeUp <= numberOfClockInterrupts && idQueue != -1)){
    idQueue = Heap_poll(sleepingProcessesQueue,0, &numberOfSleepingProcesses);
    OperatingSystem_MoveToTheREADYState(idQueue);
    OperatingSystem_PrintStatus();
@@ -3195,11 +3195,10 @@ void OperatingSystem_HandleClockInterrupt(){
  }
 
  int numCreados = OperatingSystem_LongTermScheduler();
+
  if(numCreados <= 1 && OperatingSystem_IsThereANewProgram() == -1){
   OperatingSystem_ReadyToShutdown();
  }
-
-
 
 
 
@@ -3207,7 +3206,8 @@ void OperatingSystem_HandleClockInterrupt(){
 
 
   int candidato = OperatingSystem_ShortTermScheduler();
-  if(processTable[candidato].priority < processTable[executingProcessID].priority){
+
+  if((processTable[candidato].queueID==0&&processTable[executingProcessID].queueID==1)||(((processTable[candidato].queueID==0&&processTable[executingProcessID].queueID==0)||(processTable[candidato].queueID==1&&processTable[executingProcessID].queueID==1)) && processTable[candidato].priority < processTable[executingProcessID].priority)){
    int antiguo = executingProcessID;
    OperatingSystem_ShowTime('s');
    ComputerSystem_DebugMessage(121,'s',antiguo,candidato);

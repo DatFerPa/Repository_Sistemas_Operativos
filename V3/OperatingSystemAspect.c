@@ -2434,7 +2434,7 @@ while(exit == 0) { {
 #line 522 "OperatingSystem.c"
 int idQueue = Heap_getFirst(sleepingProcessesQueue, numberOfSleepingProcesses);
 #line 523 "OperatingSystem.c"
-if (processTable[idQueue].whenToWakeUp <= numberOfClockInterrupts && idQueue != (-1)){
+if ((processTable[idQueue].whenToWakeUp <= numberOfClockInterrupts && idQueue != (-1))){
 { 
 #line 524 "OperatingSystem.c"
 idQueue = Heap_poll(sleepingProcessesQueue, 0, (&numberOfSleepingProcesses)); 
@@ -2451,20 +2451,20 @@ exit = 1; } }} }
 
 #line 535 "OperatingSystem.c"
 int numCreados = OperatingSystem_LongTermScheduler();
-#line 536 "OperatingSystem.c"
+#line 537 "OperatingSystem.c"
 if (numCreados <= 1 && OperatingSystem_IsThereANewProgram() == (-1)){
 { 
-#line 537 "OperatingSystem.c"
+#line 538 "OperatingSystem.c"
 OperatingSystem_ReadyToShutdown(); } }
-#line 544 "OperatingSystem.c"
+#line 543 "OperatingSystem.c"
 if (numProcSacados != 0 || numCreados > 0){
 { 
-#line 547 "OperatingSystem.c"
+#line 546 "OperatingSystem.c"
 
-#line 547 "OperatingSystem.c"
+#line 546 "OperatingSystem.c"
 int candidato = OperatingSystem_ShortTermScheduler();
 #line 548 "OperatingSystem.c"
-if (processTable[candidato].priority < processTable[executingProcessID].priority){
+if ((processTable[candidato].queueID == 0 && processTable[executingProcessID].queueID == 1) || (((processTable[candidato].queueID == 0 && processTable[executingProcessID].queueID == 0) || (processTable[candidato].queueID == 1 && processTable[executingProcessID].queueID == 1)) && processTable[candidato].priority < processTable[executingProcessID].priority)){
 { 
 #line 549 "OperatingSystem.c"
 

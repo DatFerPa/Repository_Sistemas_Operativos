@@ -520,7 +520,7 @@ void OperatingSystem_HandleClockInterrupt(){
 	while(exit==0){
 		//sacamos el proceso de la cola de dormidos
 		int idQueue = Heap_getFirst(sleepingProcessesQueue,numberOfSleepingProcesses);
-		if(processTable[idQueue].whenToWakeUp <= numberOfClockInterrupts && idQueue != NOPROCESS){
+		if((processTable[idQueue].whenToWakeUp <= numberOfClockInterrupts && idQueue != NOPROCESS)){
 			idQueue = Heap_poll(sleepingProcessesQueue,QUEUE_WAKEUP, &numberOfSleepingProcesses);
 			OperatingSystem_MoveToTheREADYState(idQueue);
 			OperatingSystem_PrintStatus();
@@ -533,14 +533,19 @@ void OperatingSystem_HandleClockInterrupt(){
 	}
 	
 	int numCreados = OperatingSystem_LongTermScheduler();
+	
 	if(numCreados <= 1 && OperatingSystem_IsThereANewProgram() == -1){		
 		OperatingSystem_ReadyToShutdown();
 	}
+	
+	//posible error total
+	
 	if(numProcSacados != 0 || numCreados > 0){
 		//mirar si el proceso que se encuentra ejecutndose tiene menos prioridad que el
 		//primero de la cola de listos
 		int candidato = OperatingSystem_ShortTermScheduler();
-		if(processTable[candidato].priority < processTable[executingProcessID].priority){
+		//comprobar, porque si el candidato es de usuario y el otro daemon, nos quedamos con el usuario		
+		if((processTable[candidato].queueID==USERPROCESSQUEUE&&processTable[executingProcessID].queueID==DAEMONSQUEUE)||(((processTable[candidato].queueID==USERPROCESSQUEUE&&processTable[executingProcessID].queueID==USERPROCESSQUEUE)||(processTable[candidato].queueID==DAEMONSQUEUE&&processTable[executingProcessID].queueID==DAEMONSQUEUE)) && processTable[candidato].priority < processTable[executingProcessID].priority)){
 			int antiguo = executingProcessID;
 			OperatingSystem_ShowTime(SHORTTERMSCHEDULE);
 			ComputerSystem_DebugMessage(121,SHORTTERMSCHEDULE,antiguo,candidato);
