@@ -1,0 +1,5 @@
+4
+4
+ADD -1 0
+WRITE -1
+TRAP 3

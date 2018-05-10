@@ -2760,6 +2760,9 @@ void OperatingSystem_Initialize(int daemonsIndex) {
  int i, selectedProcess, procesosCreados;
  FILE *programFile;
 
+ numberOfMemoryPartitions = OperatingSystem_InitializePartitionTable();
+ numberOfFreePartitions = numberOfMemoryPartitions;
+
 
  int processSize=OperatingSystem_ObtainProgramSize(&programFile, "OperatingSystemCode");
 
@@ -2773,8 +2776,8 @@ void OperatingSystem_Initialize(int daemonsIndex) {
 
  Processor_InitializeInterruptVectorTable(OS_address_base+1);
 
- numberOfMemoryPartitions = OperatingSystem_InitializePartitionTable();
- numberOfFreePartitions = numberOfMemoryPartitions;
+
+
 
 
  OperatingSystem_PrepareDaemons(daemonsIndex);
@@ -2783,6 +2786,7 @@ void OperatingSystem_Initialize(int daemonsIndex) {
  ComputerSystem_FillInArrivalTimeQueue();
 
  OperatingSystem_PrintStatus();
+
 
  procesosCreados = OperatingSystem_LongTermScheduler();
  if(procesosCreados <= 1 && OperatingSystem_IsThereANewProgram() == -1){
@@ -2881,7 +2885,7 @@ int OperatingSystem_CreateProcess(int indexOfExecutableProgram) {
 
  int PID;
  int processSize;
- int loadingPhysicalAddress;
+ int particionID;
  int priority;
  FILE *programFile;
  PROGRAMS_DATA *executableProgram=programList[indexOfExecutableProgram];
@@ -2912,32 +2916,32 @@ int OperatingSystem_CreateProcess(int indexOfExecutableProgram) {
  ComputerSystem_DebugMessage(142,'m',PID,executableProgram->executableName,processSize);
 
 
-  loadingPhysicalAddress=OperatingSystem_ObtainMainMemory(processSize, PID);
- if(loadingPhysicalAddress == -4){
+  particionID=OperatingSystem_ObtainMainMemory(processSize, PID);
+ if(particionID == -4){
   return -4;
  }
- if(loadingPhysicalAddress == -5){
+ if(particionID == -5){
   return -5;
  }
 
  int exitoTam = 1;
 
- exitoTam = OperatingSystem_LoadProgram(programFile, partitionsTable[loadingPhysicalAddress].initAddress, processSize);
+ exitoTam = OperatingSystem_LoadProgram(programFile, partitionsTable[particionID].initAddress, processSize);
  if(exitoTam != 1){
   return -4;
  }
 
  OperatingSystem_ShowPartitionTable("before allocating memory");
  OperatingSystem_ShowTime('m');
- ComputerSystem_DebugMessage(143,'m',loadingPhysicalAddress,partitionsTable[loadingPhysicalAddress].initAddress,partitionsTable[loadingPhysicalAddress].size,PID,executableProgram->executableName);
+ ComputerSystem_DebugMessage(143,'m',particionID,partitionsTable[particionID].initAddress,partitionsTable[particionID].size,PID,executableProgram->executableName);
  numberOfFreePartitions--;
- partitionsTable[loadingPhysicalAddress].PID = PID;
- partitionsTable[loadingPhysicalAddress].occupied = 1;
+ partitionsTable[particionID].PID = PID;
+ partitionsTable[particionID].occupied = 1;
  OperatingSystem_ShowPartitionTable("after allocating memory");
 
 
 
- OperatingSystem_PCBInitialization(PID, loadingPhysicalAddress, processSize, priority, indexOfExecutableProgram);
+ OperatingSystem_PCBInitialization(PID, partitionsTable[particionID].initAddress, processSize, priority, indexOfExecutableProgram);
 
  OperatingSystem_ShowTime('p');
  ComputerSystem_DebugMessage(111,'p',PID,statesNames[0]);
@@ -3009,13 +3013,14 @@ void OperatingSystem_ReleaseMainMemory(){
  int i;
  PROGRAMS_DATA *executableProgram=programList[processTable[executingProcessID].programListIndex];
  for(i = 0; i< numberOfMemoryPartitions;i++){
-  if(partitionsTable[i].PID == executingProcessID && partitionsTable[i].occupied !=0){
+  if(partitionsTable[i].PID == executingProcessID){
    OperatingSystem_ShowPartitionTable("before releasing memory");
    partitionsTable[i].occupied=0;
    numberOfFreePartitions++;
    OperatingSystem_ShowTime('m');
    ComputerSystem_DebugMessage(145,'m',i,partitionsTable[i].initAddress,partitionsTable[i].size,executingProcessID,executableProgram->executableName);
    OperatingSystem_ShowPartitionTable("after releasing memory");
+   break;
   }
  }
 
@@ -3327,15 +3332,13 @@ void OperatingSystem_HandleClockInterrupt(){
  int numCreados = OperatingSystem_LongTermScheduler();
  if(numCreados <= 1 && OperatingSystem_IsThereANewProgram() == -1){
   OperatingSystem_ReadyToShutdown();
- }else{
-  OperatingSystem_PrintStatus();
  }
 
  if(numProcSacados != 0 || numCreados > 0){
 
 
   int candidato = OperatingSystem_ShortTermScheduler();
-  if(processTable[candidato].priority < processTable[executingProcessID].priority){
+  if((processTable[candidato].queueID==0&&processTable[executingProcessID].queueID==1)||(((processTable[candidato].queueID==0&&processTable[executingProcessID].queueID==0)||(processTable[candidato].queueID==1&&processTable[executingProcessID].queueID==1)) && processTable[candidato].priority < processTable[executingProcessID].priority)){
    int antiguo = executingProcessID;
    OperatingSystem_ShowTime('s');
    ComputerSystem_DebugMessage(121,'s',antiguo,candidato);

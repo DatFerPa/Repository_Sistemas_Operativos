@@ -1,0 +1,7 @@
+6
+4
+ADD -4 0
+NOP
+NOP
+JUMP -4
+TRAP 3
