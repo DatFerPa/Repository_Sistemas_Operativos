@@ -2027,7 +2027,7 @@ int maxSize = 0;
 #line 321 "OperatingSystem.c"
 for(i = 0;i < numberOfMemoryPartitions;i++) { { 
 #line 325 "OperatingSystem.c"
-if (partitionsTable[i].size > maxSize && partitionsTable[i].occupied == 0){
+if (partitionsTable[i].size > maxSize){
 { 
 #line 323 "OperatingSystem.c"
 maxSize = partitionsTable[i].size; } }} } 

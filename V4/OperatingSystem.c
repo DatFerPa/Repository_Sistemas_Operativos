@@ -319,7 +319,7 @@ int OperatingSystem_mainMemoryPartitionSizeAvailable(){
 int i;
 	int maxSize = 0;
 	for(i = 0; i < numberOfMemoryPartitions; i++){
-		if(partitionsTable[i].size > maxSize && partitionsTable[i].occupied == 0){
+		if(partitionsTable[i].size > maxSize){
 			maxSize = partitionsTable[i].size;
 		}
 	}
