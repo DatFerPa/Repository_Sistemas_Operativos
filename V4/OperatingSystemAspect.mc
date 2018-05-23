@@ -2941,6 +2941,8 @@ int OperatingSystem_CreateProcess(int indexOfExecutableProgram) {
 
 
 
+
+
  OperatingSystem_PCBInitialization(PID, partitionsTable[particionID].initAddress, processSize, priority, indexOfExecutableProgram);
 
  OperatingSystem_ShowTime('p');
@@ -2979,7 +2981,7 @@ int OperatingSystem_ObtainMainMemory(int processSize, int PID){
 
    int ajuste = partitionsTable[i].size - processSize;
 
-   if(ajuste < mejorAjuste || flag == 0){
+   if(ajuste <= mejorAjuste || flag == 0){
     mejorAjuste = ajuste;
     partitionIndex = i;
     flag = 1;
@@ -3013,7 +3015,7 @@ void OperatingSystem_ReleaseMainMemory(){
  int i;
  PROGRAMS_DATA *executableProgram=programList[processTable[executingProcessID].programListIndex];
  for(i = 0; i< numberOfMemoryPartitions;i++){
-  if(partitionsTable[i].PID == executingProcessID){
+  if(partitionsTable[i].PID == executingProcessID && partitionsTable[i].occupied != 0){
    OperatingSystem_ShowPartitionTable("before releasing memory");
    partitionsTable[i].occupied=0;
    numberOfFreePartitions++;
@@ -3183,10 +3185,12 @@ void OperatingSystem_TerminateProcess() {
  OperatingSystem_ShowTime('p');
  ComputerSystem_DebugMessage(110,'p',executingProcessID,statesNames[processTable[executingProcessID].state],statesNames[4]);
 
+ OperatingSystem_ReleaseMainMemory();
+
  processTable[executingProcessID].state=EXIT;
  processTable[executingProcessID].busy = 0;
 
- OperatingSystem_ReleaseMainMemory();
+
 
 
  numberOfNotTerminatedUserProcesses--;

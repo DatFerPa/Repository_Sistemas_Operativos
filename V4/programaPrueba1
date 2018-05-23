@@ -1,0 +1,7 @@
+
+5
+33
+NOP
+NOP
+HALT
+TRAP 3

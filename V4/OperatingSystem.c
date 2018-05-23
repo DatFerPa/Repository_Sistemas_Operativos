@@ -296,7 +296,7 @@ int OperatingSystem_ObtainMainMemory(int processSize, int PID){
 			//Sacamos la diferencia para el ajuste (tiene que ser positiva o 0)
 			int ajuste = partitionsTable[i].size - processSize;
 			//Porblema aqui porque vamos a empezar con 0
-			if(ajuste < mejorAjuste || flag == 0){
+			if(ajuste <= mejorAjuste || flag == 0){
 				mejorAjuste = ajuste;
 				partitionIndex = i;
 				flag = 1;
@@ -330,7 +330,7 @@ void OperatingSystem_ReleaseMainMemory(){
 	int i;
 	PROGRAMS_DATA *executableProgram=programList[processTable[executingProcessID].programListIndex];
 	for(i = 0; i< numberOfMemoryPartitions;i++){
-		if(partitionsTable[i].PID == executingProcessID){
+		if(partitionsTable[i].PID == executingProcessID && partitionsTable[i].occupied != 0){
 			OperatingSystem_ShowPartitionTable("before releasing memory");
 			partitionsTable[i].occupied=0;
 			numberOfFreePartitions++;
@@ -500,10 +500,12 @@ void OperatingSystem_TerminateProcess() {
 	OperatingSystem_ShowTime(SYSPROC);
 	ComputerSystem_DebugMessage(110,SYSPROC,executingProcessID,statesNames[processTable[executingProcessID].state],statesNames[4]);
 	
+	OperatingSystem_ReleaseMainMemory();
+	
 	processTable[executingProcessID].state=EXIT;
 	processTable[executingProcessID].busy = 0;
 	
-	OperatingSystem_ReleaseMainMemory();
+	
 	
 	// One more process that has terminated
 	numberOfNotTerminatedUserProcesses--;

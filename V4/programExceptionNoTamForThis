@@ -1,0 +1,5 @@
+100
+4
+NOP
+NOP
+TRAP 3
